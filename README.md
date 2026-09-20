@@ -1,0 +1,1 @@
+# Pr-ctica-adquisici-n-y-visualizaci-n
