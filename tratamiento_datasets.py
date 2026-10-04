@@ -16,6 +16,8 @@ matches_mundial_seis_df = pd.read_csv("datasetsWC26/matches_mundial2026.csv", se
 tournament_stages_df = pd.read_csv("datasetsWC26/tournament_stages.csv", sep = ",")
 worldcup_venues_df = pd.read_csv("datasetsWC26/worldcup_venues.csv", sep = ";")
 
+
+# Primero hacemos una función que nos permite ver y analizar el contenido de los ficheros
 def exploration(df, nombre):
     print("\n" + "=" * 80)
     print(f"DATASET: {nombre}")
@@ -30,16 +32,72 @@ def exploration(df, nombre):
     print("\n--- Estadísticos ---")
     display(df.describe(include="all"))
 
-#Creamos los tres dataframes pedidos vacíos
+# Creamos los tres dataframes pedidos vacíos
 partidos = pd.DataFrame()
 eventos = pd.DataFrame()
 jugadores = pd.DataFrame()
 
-caracteristicas_partidos = ["fecha_partido", "ronda", "estadio", "ciudad_partido", "pais_partido", "selccion_local", "selccion_visitante", "marcador_local", "marcador_visitante", "prorroga", "penlty_local", "pelanty_visitante", "arbitro_partido"]
+caracteristicas_partidos = ["fecha_partido", "ronda", "estadio", "ciudad_partido", "pais_partido", "seleccion_local", "seleccion_visitante", "marcador_local", "marcador_visitante", "prorroga", "penalty_local", "penalty_visitante", "arbitro_partido"]
 caracteristicas_jugadores = ["seleccion_nacional", "club_jugador", "partido_seleccion", "posicion", "valor_mercado", "partidos_jugados", "minutos_jugados", "goles", "asistencias", "tiros", "tarjetas_amarillas", "tarjetas_rojas", "paradas", "goles_concedidos", "calificacion_media"]
 caracteristicas_eventos = ["minuto_evento", "index_partido", "nombre_jugador", "tipo_evento", "seleccion_evento"]
 
+# DataFrame de partidos
+# Mediante merges, cogeremos DataFrame a DataFrame para ver que relación tiene e ir haciendo merges poco a poco
+# Primero cogemos de base el matches_mundial_seis_df, que es el que más datos tiene
+# Cogeremos ciertos DataFrames basandonos el DataFRames que tengan información que necesitamos y alguna relación con nuestro DataFrame base, lo hacemos observando todos los csv
 
-
-if __name__ == "__main__":
-    exploration(worldcup_venues_df, "worldcup")
+partidos = matches_mundial_seis_df.merge(index_referees_df, on = "referee_id", how = "left")
+partidos = partidos.merge(tournament_stages_df, on = "stage_id", how = "left")
+partidos = partidos.merge(worldcup_venues_df, on = "venue_id", how = "left")
+partidos = partidos.merge(national_teams_df, left_on = "home_team_id", right_on = "team_id", how = "left")
+partidos = partidos.rename(columns = {"team_name": "seleccion_local"})
+partidos = partidos.merge(national_teams_df, left_on = "away_team_id", right_on = "team_id",how = "left", suffixes=("", "_away"))
+partidos = partidos.rename(columns = {"team_name": "seleccion_visitante"})
+display(partidos.head())
+print(partidos.columns)
+#partidos = partidos.rename(columns ={
+#    "date": "fecha_partido",
+#    "stage_name": "ronda",
+#    "stadium_name": "estadio",
+#    "city": "ciudad_partido",
+#    "country": "pais_partido",
+#    "home_score": "marcador_local",
+#    "away_score": "marcador_visitante",
+#    "home_penalty_score": "penalty_local",
+#    "away_penalty_score": "penalty_visitante",
+#    "name": "arbitro_partido"})
+#partidos["prorroga"] = partidos["result_type"].isin(["AET", "Penalties"])  #Devuelve True si acaba en prorroga o penalties
+#partidos = partidos[caracteristicas_partidos]
+#partidos.index.name = "index_partido"
+#
+#
+## DataFrame de eventos
+#jugadores = player_stats_df.merge(national_teams_df, on = "team_id", how = "left")
+#jugadores = jugadores.merge(squads_players_df, on = "player_id", how = "left")
+#jugadores = jugadores.rename(columns={
+#    "team_name": "seleccion_nacional",
+#    "club_team": "club_jugador",
+#    "caps": "partidos_seleccion",
+#    "position": "posicion",
+#    "market_value_eur": "valor_mercado",
+#    "matches_played": "partidos_jugados",
+#    "minutes_played": "minutos_jugados",
+#    "goals": "goles",
+#    "assists": "asistencias",
+#    "shots": "tiros",
+#    "yellow_cards": "tarjetas_amarillas",
+#    "red_cards": "tarjetas_rojas",
+#    "saves": "paradas",
+#    "goals_conceded": "goles_concedidos",
+#    "average_rating": "calificacion_media"})
+#jugadores = jugadores.set_index("player_name")
+#jugadores.index.name = "nombre_jugador"
+#jugadores = jugadores[caracteristicas_jugadores]
+#
+#
+#
+#
+#if __name__ == "__main__":
+#    exploration(worldcup_venues_df, "worldcup")
+#    display(partidos.head())
+#    display(jugadores.head())
