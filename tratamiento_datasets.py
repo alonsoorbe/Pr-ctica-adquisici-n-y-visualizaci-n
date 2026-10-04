@@ -17,14 +17,18 @@ tournament_stages_df = pd.read_csv("datasetsWC26/tournament_stages.csv", sep = "
 worldcup_venues_df = pd.read_csv("datasetsWC26/worldcup_venues.csv", sep = ";")
 
 def exploration(df, nombre):
-
+    print("\n" + "=" * 80)
     print(f"DATASET: {nombre}")
+    print("=" * 80)
     print("Dimensiones:", df.shape)
-    print(df.dtypes)
-    print("Duplicados", df.duplicated().sum())
-    print("Nulos por columna:\n", df.isna().sum())
-    df.info()
-    display(df.head())
+    print("Filas duplicadas:", df.duplicated().sum())
+    resumen = pd.DataFrame({"tipo": df.dtypes,"nulos": df.isna().sum(),"% nulos": (df.isna().mean() * 100).round(1),"distintos": df.nunique()})
+    print("\n--- Columnas ---")
+    display(resumen)
+    print("\n--- Filas aleatorias ---")
+    display(df.sample())
+    print("\n--- Estadísticos ---")
+    display(df.describe(include="all"))
 
 #Creamos los tres dataframes pedidos vacíos
 partidos = pd.DataFrame()
@@ -37,4 +41,5 @@ caracteristicas_eventos = ["minuto_evento", "index_partido", "nombre_jugador", "
 
 
 
-
+if __name__ == "__main__":
+    exploration(worldcup_venues_df, "worldcup")
