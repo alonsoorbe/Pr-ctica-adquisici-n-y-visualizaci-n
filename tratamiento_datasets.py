@@ -234,17 +234,9 @@ eventos = eventos[caracteristicas_eventos]
 eventos.index.name = "index_evento"
 
 
-# =============================================================================
 # 4. LIMPIEZA DE DATOS: DUPLICADOS, NULOS Y ANÓMALOS
-# =============================================================================
 
-# -----------------------------------------------------------------------------
 # 4.1 Visualización de los duplicados antes de limpiar
-# -----------------------------------------------------------------------------
-# Distinguimos dos tipos de duplicado:
-#   - Exacto:     la fila entera está repetida.
-#   - De negocio: se repite la clave que identifica el registro (mismo partido,
-#                 mismo jugador o mismo evento) aunque alguna otra columna cambie.
 
 # Limpiaza de datos, duplicados, nulos...
 
@@ -274,9 +266,8 @@ for cont in ax.containers:
 plt.tight_layout()
 plt.show()
 
-# -----------------------------------------------------------------------------
 # 4.2 Duplicados
-# -----------------------------------------------------------------------------
+
 #Empezamos con valores duplicados generales
 def duplicados_generales(df, nombre):
     """
@@ -320,9 +311,8 @@ duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
 # En eventos la clave de negocio son 4 columnas: mismo partido, minuto, jugador y tipo
 eventos = eventos.drop_duplicates(subset=["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"],keep="first")
 
-# -----------------------------------------------------------------------------
 # 4.3 Análisis de nulos y anómalos
-# -----------------------------------------------------------------------------
+
 def anomalos_numerica(df, nombre):
     """
     Análisis de las columnas NUMÉRICAS de un DataFrame.
@@ -358,6 +348,7 @@ def nulos(df, nombre):
 
 nulos(partidos, "partidos")
 #Empezamos limpiando los datos anomalos de partidos
+
 partidos["pais_partido"] = partidos["pais_partido"].replace("USA", "usa")
 # Los penaltis vienen multiplicados por 10 (30 = 3 penaltis). Dividimos entre 10
 # y ponemos 0 en los partidos sin tanda (el enunciado pide "0 si no aplica")
@@ -365,12 +356,11 @@ for col in ["penalty_local", "penalty_visitante"]:
     partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
 
 
-# -----------------------------------------------------------------------------
-# 4.4 [NUEVO] Funciones de limpieza de cada DataFrame
-# -----------------------------------------------------------------------------
+# 4.4 Funciones de limpieza de cada DataFrame
+
 def grafico_nulos(df, titulo):
     """
-    [NUEVO] Gráfico de barras horizontales con el % de nulos de cada columna.
+    Gráfico de barras horizontales con el % de nulos de cada columna.
 
     Solo se dibujan las columnas que tienen algún nulo. Sirve para justificar
     visualmente qué columnas hay que tratar (consejo del enunciado).
@@ -389,7 +379,7 @@ def grafico_nulos(df, titulo):
 
 def limpiar_partidos(df):
     """
-    [NUEVO] Limpieza de nulos y anómalos del DataFrame partidos.
+    Limpieza de nulos y anómalos del DataFrame partidos.
 
     Decisiones tomadas (vistas con nulos(partidos)):
       - Duplicados de negocio: el mismo partido aparecía varias veces (6 partidos
@@ -430,7 +420,7 @@ def limpiar_partidos(df):
 
 def limpiar_jugadores(df):
     """
-    [NUEVO] Limpieza de nulos y anómalos del DataFrame jugadores.
+    Limpieza de nulos y anómalos del DataFrame jugadores.
 
     Decisiones tomadas (vistas con nulos(jugadores)):
       - posicion: se traduce GK/DEF/MID/FWD -> Portero/Defensa/Centrocampista/Delantero.
@@ -497,7 +487,7 @@ def limpiar_jugadores(df):
 
 def limpiar_eventos(df):
     """
-    [NUEVO] Limpieza general del DataFrame eventos (paso 4).
+    Limpieza general del DataFrame eventos (paso 4).
 
     - index_partido venía como decimal (1.0, 2.0...) porque el csv tenía filas
       vacías -> se pasa a entero.
@@ -516,12 +506,11 @@ def limpiar_eventos(df):
     return df
 
 
-# =============================================================================
-# 5. [NUEVO] VALORES ANÓMALOS DEL DATAFRAME EVENTOS
-# =============================================================================
+# 5. VALORES ANÓMALOS DEL DATAFRAME EVENTOS
+
 def eventos_anomalos(eventos, partidos):
     """
-    [NUEVO] Detecta y elimina los eventos anómalos (paso 5).
+    Detecta y elimina los eventos anómalos (paso 5).
 
     Un evento se considera anómalo si cumple alguna de estas condiciones:
       1. Minuto negativo (ej. -45, -10): es imposible.
@@ -592,14 +581,11 @@ def eventos_anomalos(eventos, partidos):
     return df
 
 
-# =============================================================================
 # MAIN
-# =============================================================================
+
 if __name__ == "__main__":
 
-    # -------------------------------------------------------------------------
     # PASO 4 · Diagnóstico antes de limpiar
-    # -------------------------------------------------------------------------
     print("\n" + "#" * 80)
     print("PASO 4 · DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
     print("#" * 80)
@@ -615,9 +601,7 @@ if __name__ == "__main__":
     grafico_nulos(jugadores, "jugadores (antes)")
     grafico_nulos(eventos, "eventos (antes)")
 
-    # -------------------------------------------------------------------------
     # PASO 4 · Limpieza
-    # -------------------------------------------------------------------------
     print("\n" + "#" * 80)
     print("PASO 4 · LIMPIEZA")
     print("#" * 80)
@@ -628,20 +612,13 @@ if __name__ == "__main__":
     print("\n--- eventos ---")
     eventos = limpiar_eventos(eventos)
 
-    # -------------------------------------------------------------------------
     # PASO 5 · Eventos anómalos
-    # -------------------------------------------------------------------------
     print("\n" + "#" * 80)
     print("PASO 5 · EVENTOS ANÓMALOS")
     print("#" * 80)
     eventos = eventos_anomalos(eventos, partidos)
 
-    # -------------------------------------------------------------------------
-    # Comprobación final
-    # -------------------------------------------------------------------------
-    # Los nulos que quedan son los que se tratan en los pasos 6 y 7:
-    #   - valor_mercado y calificacion_media (jugadores)
-    #   - minuto_evento (eventos)
+
     print("\n" + "#" * 80)
     print("RESULTADO TRAS LOS PASOS 1-5")
     print("#" * 80)
@@ -651,11 +628,3 @@ if __name__ == "__main__":
     grafico_nulos(partidos, "partidos (después)")
     grafico_nulos(jugadores, "jugadores (después)")
     grafico_nulos(eventos, "eventos (después)")
-
-    # -------------------------------------------------------------------------
-    # PASOS 6, 7 y 8 (pendientes)
-    # -------------------------------------------------------------------------
-    # 6) Homogeneizar fecha_partido con expresiones regulares
-    # 7) Imputar valor_mercado (media de la selección), calificacion_media
-    #    (regresión) y minuto_evento (interpolación)
-    # 8) Exportar: partidosWC26.xlsx, eventosWC26.xlsx, jugadoresWC2026.xlsx
