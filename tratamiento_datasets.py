@@ -131,26 +131,16 @@ national_teams_df = national_teams_df.dropna(subset=["team_id"]).drop_duplicates
 match_register_df = match_register_df.dropna(subset=["match_id"])                    # 15 filas vacías
 match_register_df = match_register_df.drop_duplicates(subset="event_id", keep="first")  # mismo evento repetido
 
-# [NUEVO] Nombres de jugadores corregidos (se usan en jugadores y en eventos)
-# Problemas detectados en la exploración:
-#   - En squads_and_players, 7 jugadores aparecen solo como "Mc" (nombre cortado).
-#     En player_stats sí está el nombre completo (Scott McTominay, Weston McKennie...).
-#   - En player_stats los acentos están mal codificados ("JosŽ Raœl"), así que el
-#     nombre bueno es el de squads_and_players.
-#   - Hay dos jugadores distintos llamados "Ali Ahmed" (Canadá y Arabia Saudí).
-#     Como el índice de jugadores es el nombre, les añadimos la selección para
-#     que no se confundan ni se borre uno como si fuera un duplicado.
-# Creamos una Serie player_id -> nombre correcto y la aplicamos con .map()
+# Cogemos los nombres de squads_and_players porque en player_stats los acentos salen mal
+# Si dos jugadores se llaman igual, les añadimos su selección para distinguirlos
 nombres_correctos = squads_players_df.set_index("player_id")["player_name"]
-nombres_stats = player_stats_df.set_index("player_id")["player_name"]
-nombres_correctos = nombres_correctos.where(nombres_correctos.str.len() > 2, nombres_stats)  # "Mc" -> nombre completo
 seleccion_de_jugador = squads_players_df.set_index("player_id")["team_id"].map(national_teams_df.set_index("team_id")["team_name"])
 repetidos = nombres_correctos.duplicated(keep=False)
 nombres_correctos[repetidos] = nombres_correctos[repetidos] + " (" + seleccion_de_jugador[repetidos] + ")"
 
-# -----------------------------------------------------------------------------
+
 # 3.1 DataFrame PARTIDOS
-# -----------------------------------------------------------------------------
+
 # Base: matches_mundial2026 (un registro por partido) y le vamos añadiendo:
 #   árbitros (referee_id) -> fases (stage_id) -> estadios (venue_id)
 #   -> selección local (home_team_id) -> selección visitante (away_team_id)
@@ -183,9 +173,8 @@ partidos = partidos.set_index("match_id")
 partidos = partidos[caracteristicas_partidos]
 partidos.index.name = "index_partido"
 
-# -----------------------------------------------------------------------------
 # 3.2 DataFrame JUGADORES
-# -----------------------------------------------------------------------------
+
 # Base: player_stats (estadísticas del torneo) + selección + datos de la plantilla
 # (club, internacionalidades, posición, valor de mercado)
 jugadores = player_stats_df.merge(national_teams_df, on = "team_id", how = "left")
@@ -215,14 +204,11 @@ jugadores = jugadores.set_index("player_name")
 jugadores.index.name = "nombre_jugador"
 jugadores = jugadores[caracteristicas_jugadores]
 
-# -----------------------------------------------------------------------------
 # 3.3 DataFrame EVENTOS
-# -----------------------------------------------------------------------------
+
 # Base: match_register (un registro por evento) + selección + nombre del jugador
 eventos = match_register_df.merge(national_teams_df, on = "team_id", how = "left")
 eventos = eventos.merge(player_stats_df, on = "player_id", how = "left")
-# [NUEVO] El nombre de player_stats tiene los acentos mal codificados:
-# lo sustituimos por el nombre corregido para que coincida con el de jugadores
 eventos["player_name"] = eventos["player_id"].map(nombres_correctos)
 eventos = eventos.rename(columns = {
     "minute": "minuto_evento",
