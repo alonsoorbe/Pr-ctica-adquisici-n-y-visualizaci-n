@@ -67,7 +67,7 @@ partidos = partidos.rename(columns ={
     "name": "arbitro_partido"})
 partidos["prorroga"] = partidos["result_type"].isin(["AET", "Penalties"])  #Devuelve True si acaba en prorroga o penalties
 partidos = partidos[caracteristicas_partidos]
-partidos.index.name = "index_partidos"
+partidos.index.name = "index_partido"
 
 
 # DataFrame de jugadores
@@ -125,9 +125,11 @@ def duplicados_negocio_index(df, columna, nombre_df):
     df = df.drop_duplicates(subset = columna, keep = "first")
     df = df.drop(columns = "nulos").set_index(columna)
     print(f"Número de duplicados de negocio en {nombre_df} después de eliminarlos: {df.index.duplicated().sum()}")
+duplicados_negocio_index(partidos, "index_partido", "partidos")
 
 duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
-
+print(partidos.columns)
+eventos = eventos.drop_duplicates(subset=["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"],keep="first")
 #if __name__ == "__main__":
     #exploration(worldcup_venues_df, "worldcup")
     #display(partidos.head())
