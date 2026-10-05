@@ -126,7 +126,6 @@ def duplicados_negocio_index(df, columna, nombre_df):
     df = df.drop(columns = "nulos").set_index(columna)
     print(f"Número de duplicados de negocio en {nombre_df} después de eliminarlos: {df.index.duplicated().sum()}")
 
-duplicados_negocio_index(partidos, "index_partidos", "partidos")
 duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
 
 #if __name__ == "__main__":
