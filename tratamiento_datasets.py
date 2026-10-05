@@ -1,5 +1,6 @@
 import pandas as pd
 from IPython.display import display
+import matplotlib.pyplot as plt
 
 
 
@@ -110,6 +111,30 @@ eventos.index.name = "index_evento"
 
 # Limpiaza de datos, duplicados, nulos...
 
+#Primero observamos visualmente los nulos con una gráfica
+claves = {
+    "partidos":  (partidos,  ["index_partido"]),
+    "jugadores": (jugadores, ["nombre_jugador"]),
+    "eventos":   (eventos,   ["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"]),
+}
+
+resumen = pd.DataFrame({
+    nombre: {
+        "Duplicados exactos": df.reset_index().duplicated().sum(),
+        "Duplicados de negocio": df.reset_index().duplicated(subset=clave).sum(),
+    }
+    for nombre, (df, clave) in claves.items()
+})
+
+display(resumen)
+
+ax = resumen.plot(kind="bar", rot=0, title="Duplicados por DataFrame antes de la limpieza")
+ax.set_ylabel("Nº de filas")
+for cont in ax.containers:
+    ax.bar_label(cont)
+plt.tight_layout()
+plt.show()
+
 #Empezamos con valores duplicados generales
 def duplicados_generales(df, nombre):
     print(f"Número de duplicados exactos en {nombre}: {df.duplicated().sum()}")
@@ -125,11 +150,36 @@ def duplicados_negocio_index(df, columna, nombre_df):
     df = df.drop_duplicates(subset = columna, keep = "first")
     df = df.drop(columns = "nulos").set_index(columna)
     print(f"Número de duplicados de negocio en {nombre_df} después de eliminarlos: {df.index.duplicated().sum()}")
-duplicados_negocio_index(partidos, "index_partido", "partidos")
 
+duplicados_negocio_index(partidos, "index_partido", "partidos")
 duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
-print(partidos.columns)
 eventos = eventos.drop_duplicates(subset=["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"],keep="first")
+
+def nulos_numerica(df, nombre):
+    num = df.select_dtypes(include="number") # solo columnas numéricas
+    print(f"\n===== {nombre} (numéricas) =====")
+    print(num.describe())
+    print("Nulos:\n", num.isna().sum())
+    print("Ceros:\n", (num == 0).sum())
+    print("Negativos:\n", (num < 0).sum())
+
+def nulos_categorica(df, nombre):
+    cat = df.select_dtypes(exclude="number") # columnas no numéricas
+    print(f"\n===== {nombre} (categóricas) =====")
+    cat.info()
+    print((cat.isna().mean() * 100).round(2))
+    for col in cat.columns:
+        print(f"\n--- {col} ---\n", cat[col].map(repr).value_counts(dropna=False).head(10))
+
+def nulos(df, nombre):
+    for columna in df.columns:
+        if df[columna].dtype == "object":
+            nulos_categorica(df, nombre)
+        else:
+            nulos_numerica(df, nombre)
+
+nulos(partidos, "partidos")
+
 #if __name__ == "__main__":
     #exploration(worldcup_venues_df, "worldcup")
     #display(partidos.head())
