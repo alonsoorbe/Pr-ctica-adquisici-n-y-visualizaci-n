@@ -67,7 +67,7 @@ partidos = partidos.rename(columns ={
     "name": "arbitro_partido"})
 partidos["prorroga"] = partidos["result_type"].isin(["AET", "Penalties"])  #Devuelve True si acaba en prorroga o penalties
 partidos = partidos[caracteristicas_partidos]
-partidos.index.name = "index_partido"
+partidos.index.name = "index_partidos"
 
 
 # DataFrame de jugadores
