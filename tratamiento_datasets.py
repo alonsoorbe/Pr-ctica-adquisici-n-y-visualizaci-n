@@ -46,6 +46,9 @@ caracteristicas_eventos = ["minuto_evento", "index_partido", "nombre_jugador", "
 # Mediante merges, cogeremos DataFrame a DataFrame para ver que relación tiene e ir haciendo merges poco a poco
 # Primero cogemos de base el matches_mundial_seis_df, que es el que más datos tiene
 # Cogeremos ciertos DataFrames basandonos el DataFRames que tengan información que necesitamos y alguna relación con nuestro DataFrame base, lo hacemos observando todos los csv
+national_teams_df = national_teams_df.dropna(subset=["team_id"]).drop_duplicates(subset="team_id")
+match_register_df = match_register_df.dropna(subset=["match_id"])                    # 15 filas vacías
+match_register_df = match_register_df.drop_duplicates(subset="event_id", keep="first")  # mismo evento repetido
 
 partidos = matches_mundial_seis_df.merge(index_referees_df, on = "referee_id", how = "left")
 partidos = partidos.rename(columns= {"country": "ref_country"})
@@ -155,30 +158,30 @@ duplicados_negocio_index(partidos, "index_partido", "partidos")
 duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
 eventos = eventos.drop_duplicates(subset=["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"],keep="first")
 
-def nulos_numerica(df, nombre):
+def anomalos_numerica(df, nombre):
     num = df.select_dtypes(include="number") # solo columnas numéricas
     print(f"\n===== {nombre} (numéricas) =====")
     print(num.describe())
     print("Nulos:\n", num.isna().sum())
-    print("Ceros:\n", (num == 0).sum())
     print("Negativos:\n", (num < 0).sum())
 
-def nulos_categorica(df, nombre):
+def anomalos_categorica(df, nombre):
     cat = df.select_dtypes(exclude="number") # columnas no numéricas
     print(f"\n===== {nombre} (categóricas) =====")
-    cat.info()
     print((cat.isna().mean() * 100).round(2))
     for col in cat.columns:
         print(f"\n--- {col} ---\n", cat[col].map(repr).value_counts(dropna=False).head(10))
 
 def nulos(df, nombre):
-    for columna in df.columns:
-        if df[columna].dtype == "object":
-            nulos_categorica(df, nombre)
-        else:
-            nulos_numerica(df, nombre)
+    anomalos_categorica(df, nombre)
+    anomalos_numerica(df, nombre)
 
 nulos(partidos, "partidos")
+#Empezamos limpiando los datos anomalos de partidos
+partidos["pais_partido"] = partidos["pais_partido"].replace("USA", "usa")
+for col in ["penalty_local", "penalty_visitante"]:
+    partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
+
 
 #if __name__ == "__main__":
     #exploration(worldcup_venues_df, "worldcup")
