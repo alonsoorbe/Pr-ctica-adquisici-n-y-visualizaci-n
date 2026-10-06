@@ -6,11 +6,11 @@ from IPython.display import display
 import matplotlib.pyplot as plt
 
 
-# [NUEVO] Límites de minutos usados en el paso 5 (minutos anómalos)
-MINUTO_MAX_REGLAMENTARIO = 90 + 15   # 90' + un descuento muy generoso
-MINUTO_MAX_TANDA = 121               # en el dataset la tanda de penaltis se registra en el 121'
+# minutos que consideramos anómalos
+MINUTO_MAX_REGLAMENTARIO = 90 + 15
+MINUTO_MAX_TANDA = 121
 
-# [NUEVO] Traducciones para dejar las categorías limpias y en castellano
+# Traducciones que no se pueden conseguir con los csv
 RONDAS = {
     "Group Stage": "Fase de grupos",
     "Round of 32": "Dieciseisavos",
@@ -18,14 +18,14 @@ RONDAS = {
     "Quarter-finals": "Cuartos",
     "Semi-finals": "Semifinal",
     "Third-place match": "Tercer puesto",
-    "Final": "Final",
-}
+    "Final": "Final"}
+
 POSICIONES = {
     "GK": "Portero",
     "DEF": "Defensa",
     "MID": "Centrocampista",
-    "FWD": "Delantero",
-}
+    "FWD": "Delantero"}
+
 TIPOS_EVENTO = {
     "Goal": "Gol",
     "Assist": "Asistencia",
@@ -34,8 +34,7 @@ TIPOS_EVENTO = {
     "Penalty Shootout Goal": "Penalty marcado",
     "Penalty Shootout Miss": "Penalty fallado",
     "VAR Review": "Revisión VAR",
-    "Review VAR": "Revisión VAR",     # mismo evento escrito al revés en algunos registros
-}
+    "Review VAR": "Revisión VAR"}
 
 
 # 1. IMPORTACIÓN Y EXPLORACIÓN INICIAL DE LOS DATASETS
@@ -65,41 +64,34 @@ datasets_originales = {
     "matches_mundial2022": matches_mundial_dos_df,
     "matches_mundial2026": matches_mundial_seis_df,
     "tournament_stages": tournament_stages_df,
-    "worldcup_venues": worldcup_venues_df,
-}
+    "worldcup_venues": worldcup_venues_df}
 
 
-# Primero hacemos una función que nos permite ver y analizar el contenido de los ficheros
+# Primero hacemos una función que nos permite ver y analizar a lo que nos enfrentamos
 def exploration(df, nombre):
     """
-    Exploración inicial de un DataFrame (paso 1).
+    Exploración inicial de un DataFrame.
 
     Muestra por pantalla:
-      - Dimensiones (filas, columnas) y número de filas duplicadas exactas.
-      - Una tabla resumen por columna: tipo de dato, nº de nulos, % de nulos
-        y nº de valores distintos.
-      - Una fila aleatoria para ver el formato real de los datos.
-      - Los estadísticos básicos de todas las columnas (describe).
+      - Dimensiones (filas, columnas) y número de filas duplicadas exactas
+      - Una tabla resumen por columna: tipo de dato, nº de nulos, % de nulos y nº de valores distintos.
+      - Una fila aleatoria para ver el formato real de los datos
+      - Estadísticas básicas de todas las columnas
 
     Parámetros
-      df     : DataFrame a explorar.
-      nombre : texto que se usa como título en la salida.
+      df     : DataFrame.
+      nombre : nombre de df como texto
     """
-    # Cabecera con el nombre del dataset
     print("\n" + "=" * 80)
     print(f"DATASET: {nombre}")
     print("=" * 80)
-    # Tamaño y duplicados exactos (filas idénticas en todas las columnas)
     print("Dimensiones:", df.shape)
     print("Filas duplicadas:", df.duplicated().sum())
-    # Resumen por columna: tipo, nulos, % nulos y nº de valores distintos
     resumen = pd.DataFrame({"tipo": df.dtypes,"nulos": df.isna().sum(),"% nulos": (df.isna().mean() * 100).round(1),"distintos": df.nunique()})
     print("\n--- Columnas ---")
     display(resumen)
-    # Una fila al azar para ver cómo vienen escritos los datos
     print("\n--- Filas aleatorias ---")
     display(df.sample())
-    # Estadísticos de todas las columnas (numéricas y de texto)
     print("\n--- Estadísticos ---")
     display(df.describe(include="all"))
 
@@ -111,28 +103,26 @@ partidos = pd.DataFrame()
 eventos = pd.DataFrame()
 jugadores = pd.DataFrame()
 
-# Columnas finales de cada DataFrame, con los nombres exactos del enunciado
-# (el índice de cada uno se asigna aparte: index_partido, nombre_jugador, index_evento)
+# Columnas finales con los nombres que nos piden
 caracteristicas_partidos = ["fecha_partido", "ronda", "estadio", "ciudad_partido", "pais_partido", "seleccion_local", "seleccion_visitante", "marcador_local", "marcador_visitante", "prorroga", "penalty_local", "penalty_visitante", "arbitro_partido"]
 caracteristicas_jugadores = ["seleccion_nacional", "club_jugador", "partidos_seleccion", "posicion", "valor_mercado", "partidos_jugados", "minutos_jugados", "goles", "asistencias", "tiros", "tarjetas_amarillas", "tarjetas_rojas", "paradas", "goles_concedidos", "calificacion_media"]
 caracteristicas_eventos = ["minuto_evento", "index_partido", "nombre_jugador", "tipo_evento", "seleccion_evento"]
 
 
-# 3. CONSTRUCCIÓN DE LOS DATAFRAMES (MERGES Y RENOMBRADO DE COLUMNAS)
+# 3. CONSTRUCCIÓN DE LOS DATAFRAMES
 
-# -----------------------------------------------------------------------------
-# 3.0 Limpieza previa de las tablas auxiliares que se usan como "diccionario"
-# -----------------------------------------------------------------------------
 # DataFrame de partidos
-# Mediante merges, cogeremos DataFrame a DataFrame para ver que relación tiene e ir haciendo merges poco a poco
-# Primero cogemos de base el matches_mundial_seis_df, que es el que más datos tiene
-# Cogeremos ciertos DataFrames basandonos el DataFRames que tengan información que necesitamos y alguna relación con nuestro DataFrame base, lo hacemos observando todos los csv
-national_teams_df = national_teams_df.dropna(subset=["team_id"]).drop_duplicates(subset="team_id")
-match_register_df = match_register_df.dropna(subset=["match_id"])                    # 15 filas vacías
-match_register_df = match_register_df.drop_duplicates(subset="event_id", keep="first")  # mismo evento repetido
 
-# Cogemos los nombres de squads_and_players porque en player_stats los acentos salen mal
-# Si dos jugadores se llaman igual, les añadimos su selección para distinguirlos
+# Mediante merges, cogeremos DataFrame a DataFrame para ver que relación tiene e ir haciendo merges poco a poco
+# Primero cogemos de base el matches_mundial_seis_df, que es el que más datos tiene de los que necesitamos
+# Cogeremos ciertos DataFrames basandonos en la info que necesitemos
+
+national_teams_df = national_teams_df.dropna(subset=["team_id"]).drop_duplicates(subset="team_id")
+match_register_df = match_register_df.dropna(subset=["match_id"])
+match_register_df = match_register_df.drop_duplicates(subset="event_id", keep="first")
+
+# Cogemos los nombres de squads_and_players porque en player_stats las tildes se ponen mal
+# Si dos jugadores se llaman igual ponemos su seleccion
 nombres_correctos = squads_players_df.set_index("player_id")["player_name"]
 seleccion_de_jugador = squads_players_df.set_index("player_id")["team_id"].map(national_teams_df.set_index("team_id")["team_name"])
 repetidos = nombres_correctos.duplicated(keep=False)
@@ -141,11 +131,9 @@ nombres_correctos[repetidos] = nombres_correctos[repetidos] + " (" + seleccion_d
 
 # 3.1 DataFrame PARTIDOS
 
-# Base: matches_mundial2026 (un registro por partido) y le vamos añadiendo:
-#   árbitros (referee_id) -> fases (stage_id) -> estadios (venue_id)
-#   -> selección local (home_team_id) -> selección visitante (away_team_id)
+# Base: matches_mundial2026
+
 partidos = matches_mundial_seis_df.merge(index_referees_df, on = "referee_id", how = "left")
-# Renombramos el país del árbitro para no confundirlo con el país del estadio
 partidos = partidos.rename(columns= {"country": "ref_country"})
 partidos = partidos.merge(tournament_stages_df, on = "stage_id", how = "left")
 partidos = partidos.merge(worldcup_venues_df, on = "venue_id", how = "left")
@@ -153,8 +141,7 @@ partidos = partidos.merge(national_teams_df, left_on = "home_team_id", right_on 
 partidos = partidos.rename(columns = {"team_name": "seleccion_local"})
 partidos = partidos.merge(national_teams_df, left_on = "away_team_id", right_on = "team_id",how = "left", suffixes=("", "_away"))
 partidos = partidos.rename(columns = {"team_name": "seleccion_visitante"})
-# Renombramos al nombre exacto que pide el enunciado
-partidos = partidos.rename(columns ={
+partidos = partidos.rename(columns ={       #Ponemos los nombres que nos piden
     "date": "fecha_partido",
     "stage_name": "ronda",
     "stadium_name": "estadio",
@@ -166,19 +153,14 @@ partidos = partidos.rename(columns ={
     "away_penalty_score": "penalty_visitante",
     "name": "arbitro_partido"})
 partidos["prorroga"] = partidos["result_type"].isin(["AET", "Penalties"])  #Devuelve True si acaba en prorroga o penalties
-# [NUEVO] Usamos match_id como índice: así index_partido va de 1 a 104 y coincide
-# con el index_partido de eventos (que también es el match_id).
-# Además permite detectar los duplicados de negocio (mismo partido repetido).
 partidos = partidos.set_index("match_id")
-partidos = partidos[caracteristicas_partidos]
+partidos = partidos[caracteristicas_partidos]  #Aplicamos como una "mascara" para quedarnos solo con los que nos interesa
 partidos.index.name = "index_partido"
 
 # 3.2 DataFrame JUGADORES
 
-# Base: player_stats (estadísticas del torneo) + selección + datos de la plantilla
-# (club, internacionalidades, posición, valor de mercado)
+# Base: player_stats
 jugadores = player_stats_df.merge(national_teams_df, on = "team_id", how = "left")
-# El nombre y la posición se cogen de squads_and_players, así que los quitamos de aquí
 jugadores = jugadores.drop(columns = ["player_name", "position"])
 jugadores = jugadores.merge(squads_players_df, on = "player_id", how = "left")
 
@@ -198,7 +180,7 @@ jugadores = jugadores.rename(columns={
     "saves": "paradas",
     "goals_conceded": "goles_concedidos",
     "average_rating": "calificacion_media"})
-# [NUEVO] Sustituimos el nombre por el nombre corregido (ver 3.0)
+# Sustituimos el nombre por el nombre bien puesto(de antes)
 jugadores["player_name"] = jugadores["player_id"].map(nombres_correctos)
 jugadores = jugadores.set_index("player_name")
 jugadores.index.name = "nombre_jugador"
@@ -206,7 +188,7 @@ jugadores = jugadores[caracteristicas_jugadores]
 
 # 3.3 DataFrame EVENTOS
 
-# Base: match_register (un registro por evento) + selección + nombre del jugador
+# Base: match_register
 eventos = match_register_df.merge(national_teams_df, on = "team_id", how = "left")
 eventos = eventos.merge(player_stats_df, on = "player_id", how = "left")
 eventos["player_name"] = eventos["player_id"].map(nombres_correctos)
@@ -222,25 +204,17 @@ eventos.index.name = "index_evento"
 
 # 4. LIMPIEZA DE DATOS: DUPLICADOS, NULOS Y ANÓMALOS
 
-# 4.1 Visualización de los duplicados antes de limpiar
-
-# Limpiaza de datos, duplicados, nulos...
-
-#Primero observamos visualmente los duplicados con una gráfica
+# Para hacer una gráfica
 claves = {
     "partidos":  (partidos,  ["index_partido"]),
     "jugadores": (jugadores, ["nombre_jugador"]),
-    "eventos":   (eventos,   ["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"]),
-}
+    "eventos":   (eventos,   ["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"])}
 
 # Tabla con el nº de duplicados exactos y de negocio de cada DataFrame
-resumen = pd.DataFrame({
-    nombre: {
+resumen = pd.DataFrame({nombre: {
         "Duplicados exactos": df.reset_index().duplicated().sum(),
-        "Duplicados de negocio": df.reset_index().duplicated(subset=clave).sum(),
-    }
-    for nombre, (df, clave) in claves.items()
-})
+        "Duplicados de negocio": df.reset_index().duplicated(subset=clave).sum()}
+    for nombre, (df, clave) in claves.items()})
 
 display(resumen)
 
@@ -258,43 +232,19 @@ plt.show()
 def duplicados_generales(df, nombre):
     """
     Informa de los duplicados exactos (filas idénticas) de un DataFrame.
-
-    Imprime cuántas filas duplicadas hay antes y después de aplicar
-    drop_duplicates().
-    OJO: la función no devuelve el DataFrame, así que solo sirve para
-    informar; la eliminación real se hace en el main.
     """
     print(f"Número de duplicados exactos en {nombre}: {df.duplicated().sum()}")
-    df = df.drop_duplicates()
-    print(f"Número de duplicados después: {df.duplicated().sum()}")
 
-# Ahora iremos DataFrame a DataFrame quitando los duplicados de negocio en las columnas índices
-def duplicados_negocio_index(df, columna, nombre_df):
+# Ahora duplicados de negocio en las columnas índices
+def duplicados_negocio_index(df, nombre_df):
     """
     Informa de los duplicados de negocio (índice repetido) de un DataFrame.
-
-    Criterio: si un índice aparece varias veces, nos quedamos con la fila
-    que tiene MENOS nulos (la más completa). Para ello:
-      1) se pasa el índice a columna (reset_index),
-      2) se cuenta el nº de nulos de cada fila,
-      3) se ordena de menos a más nulos,
-      4) se borran los repetidos quedándonos con el primero (el más completo),
-      5) se vuelve a poner la columna como índice.
-    Imprime el nº de duplicados antes y después.
-    OJO: igual que la anterior, no devuelve el DataFrame (solo informa).
     """
     print(f"Número de duplicados de negocio en {nombre_df}: {df.index.duplicated().sum()}")
-    df = df.reset_index()
-    # Columna auxiliar con el nº de nulos de cada fila
-    df["nulos"] = df.isna().sum(axis = 1)
-    df = df.sort_values(by= "nulos", ascending = True)
-    df = df.drop_duplicates(subset = columna, keep = "first")
-    df = df.drop(columns = "nulos").set_index(columna)
-    print(f"Número de duplicados de negocio en {nombre_df} después de eliminarlos: {df.index.duplicated().sum()}")
 
-duplicados_negocio_index(partidos, "index_partido", "partidos")
-duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
-# En eventos los duplicados de negocio ya se eliminaron en 3.0 por event_id
+duplicados_negocio_index(partidos, "partidos")
+duplicados_negocio_index(jugadores, "jugadores")
+# En eventos los duplicados de negocio se elimnan en el 3
 
 # 4.3 Análisis de nulos y anómalos
 
@@ -302,9 +252,8 @@ def anomalos_numerica(df, nombre):
     """
     Análisis de las columnas NUMÉRICAS de un DataFrame.
 
-    Imprime los estadísticos (describe), los nulos por columna y cuántos
-    valores negativos hay (en este dataset ningún valor numérico debería
-    ser negativo: goles, minutos, tarjetas...).
+    Hace un describe, para que se pueda ver los nulos por columna y cuántos
+    valores negativos hay, ya que no deberia de haber
     """
     num = df.select_dtypes(include="number") 
     print(f"\n===== {nombre} (numéricas) =====")
@@ -317,8 +266,7 @@ def anomalos_categorica(df, nombre):
     Análisis de las columnas NO NUMÉRICAS (texto) de un DataFrame.
 
     Imprime el % de nulos de cada columna y los 10 valores más frecuentes.
-    Se usa repr() para que se vean los espacios sobrantes ('Quarter-finals ')
-    y las variantes de escritura ('USA' / 'usa').
+    Se usa repr() apreciar espacios y palabras escritas de distinta forma
     """
     cat = df.select_dtypes(exclude="number") 
     print(f"\n===== {nombre} (categóricas) =====")
@@ -327,7 +275,9 @@ def anomalos_categorica(df, nombre):
         print(f"\n--- {col} ---\n", cat[col].map(repr).value_counts(dropna=False).head(10))
 
 def anomalos(df, nombre):
-    """Lanza los dos análisis anteriores (texto + numérico) sobre un DataFrame."""
+    """
+    Lanza los dos análisis anteriores sobre un DataFrame.
+    """
     anomalos_categorica(df, nombre)
     anomalos_numerica(df, nombre)
 
@@ -337,8 +287,7 @@ def grafico_nulos(df, titulo):
     """
     Gráfico de barras horizontales con el % de nulos de cada columna.
 
-    Solo se dibujan las columnas que tienen algún nulo. Sirve para justificar
-    visualmente qué columnas hay que tratar (consejo del enunciado).
+    Solo se dibujan las columnas que tienen algún nulo
     """
     porcentaje = (df.isna().mean() * 100).round(1)
     porcentaje = porcentaje[porcentaje > 0].sort_values()
@@ -355,40 +304,19 @@ def grafico_nulos(df, titulo):
 def limpiar_partidos(df):
     """
     Limpieza de nulos y anómalos del DataFrame partidos.
-
-    Decisiones tomadas (vistas con nulos(partidos)):
-      - Duplicados de negocio: el mismo partido aparecía varias veces (6 partidos
-        repetidos en el csv + filas multiplicadas por árbitros y fases repetidas
-        en sus tablas). Las filas repetidas son idénticas, así que nos quedamos
-        con la primera de cada index_partido -> 104 partidos (los del Mundial).
-      - ronda: 'Quarter-finals ' tenía un espacio al final -> strip() y se
-        traduce al castellano (Fase de grupos, Octavos, Cuartos...).
-      - pais_partido: venían 'USA' y 'usa' mezclados con 'MEX' y 'CAN'.
-        Lo dejamos todo en mayúsculas para que sea homogéneo.
-      - prorroga: el enunciado pide SI / NO en vez de True / False.
-      - arbitro_partido: un partido (el 53) no tiene árbitro asignado en el csv.
-        No se puede deducir, así que se rellena con 'Desconocido'.
-      - Marcadores: se comprueba que no hay negativos y se dejan como enteros.
-    La fecha_partido NO se toca aquí: se homogeneiza en el paso 6 con regex.
     """
     df = df.copy()
-    # Duplicados de negocio: un único registro por partido
-    df = df[~df.index.duplicated(keep="first")].sort_index()
-    # Quitamos espacios sobrantes en las columnas de texto
+    df = df[~df.index.duplicated(keep="first")].sort_index()     # Duplicados de negocio
     for col in ["ronda", "estadio", "ciudad_partido", "pais_partido",
                 "seleccion_local", "seleccion_visitante", "arbitro_partido"]:
-        df[col] = df[col].str.strip()
+        df[col] = df[col].str.strip()  # Quitamos espacios
     for col in ["penalty_local", "penalty_visitante"]:
         partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
-    # Traducción de las rondas
+    # Traduccion ronda(al principio están las conversiones)
     df["ronda"] = df["ronda"].replace(RONDAS)
-    # País del estadio en mayúsculas (USA, MEX, CAN)
     df["pais_partido"] = df["pais_partido"].str.upper()
-    # Prórroga como SI / NO
     df["prorroga"] = df["prorroga"].map({True: "SI", False: "NO"})
-    # Árbitro desconocido
-    df["arbitro_partido"] = df["arbitro_partido"].fillna("Desconocido")
-    # Comprobación de marcadores negativos (no debería haber ninguno)
+    df["arbitro_partido"] = df["arbitro_partido"].fillna("Desconocido") # Árbitro desconocido
     for col in ["marcador_local", "marcador_visitante"]:
         print(f"{col}: {(df[col] < 0).sum()} valores negativos")
         df[col] = df[col].astype(int)
@@ -397,64 +325,36 @@ def limpiar_partidos(df):
 
 def limpiar_jugadores(df):
     """
-    Limpieza de nulos y anómalos del DataFrame jugadores.
-
-    Decisiones tomadas (vistas con nulos(jugadores)):
-      - posicion: se traduce GK/DEF/MID/FWD -> Portero/Defensa/Centrocampista/Delantero.
-      - Estadísticas nulas (goles, asistencias, tiros, tarjetas): TODOS los
-        jugadores con estos nulos tienen 0 minutos jugados, es decir, no han
-        jugado. Por tanto su valor real es 0.
-      - tiros: además hay jugadores que SÍ han jugado pero no tienen tiros
-        registrados. Se imputan con la mediana de tiros de su posición
-        (un portero no tira lo mismo que un delantero).
-      - paradas y goles_concedidos: solo tienen sentido en porteros. En el
-        resto de posiciones el nulo significa 0.
-      - calificacion_media = 0: hay jugadores con 1-2 minutos y nota 0. Una
-        nota 0 no es real (significa "sin nota"), así que se pasa a nulo para
-        imputarla en el paso 7 junto al resto.
-      - valor_mercado = 0: un jugador de primera división con valor 0 es un
-        error -> nulo, se imputa en el paso 7 (media de su selección).
-        El valor está en millones de euros (M€).
-      - Se comprueba que no haya negativos ni partidos > 8 (máximo en un Mundial
-        de 48 selecciones) ni minutos imposibles (> 120 por partido).
-      - Tipos: las columnas de conteo se pasan a entero (int).
-    valor_mercado y calificacion_media se dejan con nulos A PROPÓSITO:
-    se rellenan con las técnicas de imputación del paso 7.
+    Limpieza de nulos y anómalos del DataFrame jugadores
     """
     df = df.copy()
-    # Traducción de posiciones
-    df["posicion"] = df["posicion"].str.strip().replace(POSICIONES)
+    df["posicion"] = df["posicion"].str.strip().replace(POSICIONES) # Ponemos las posiciones como nos pide
 
-    # Comprobaciones de valores imposibles
     numericas = df.select_dtypes(include="number").columns
     print("Valores negativos por columna:\n", (df[numericas] < 0).sum())
     print("Jugadores con más de 8 partidos:", (df["partidos_jugados"] > 8).sum())
     print("Jugadores con más de 120 min por partido:",
           (df["minutos_jugados"] > 120 * df["partidos_jugados"]).sum())
 
-    # Estadísticas de jugadores que no han jugado -> 0
-    no_ha_jugado = df["minutos_jugados"] == 0
+    no_ha_jugado = df["minutos_jugados"] == 0 #sacamos los que no han jugado
     estadisticas = ["goles", "asistencias", "tiros", "tarjetas_amarillas", "tarjetas_rojas"]
     for col in estadisticas:
         df.loc[no_ha_jugado, col] = df.loc[no_ha_jugado, col].fillna(0)
 
-    # Tiros que faltan en jugadores que sí han jugado -> mediana de su posición
     print("Tiros nulos en jugadores que sí han jugado:", df["tiros"].isna().sum())
     mediana_tiros = df.groupby("posicion")["tiros"].transform("median")
     df["tiros"] = df["tiros"].fillna(mediana_tiros)
 
-    # Paradas y goles concedidos -> 0 en los que no son porteros
     no_portero = df["posicion"] != "Portero"
     for col in ["paradas", "goles_concedidos"]:
         df.loc[no_portero, col] = df.loc[no_portero, col].fillna(0)
 
-    # Valores anómalos que se pasan a nulo para imputarlos en el paso 7
+    #pasamos a nulo para el 7
     print("Calificaciones = 0:", (df["calificacion_media"] == 0).sum())
     print("Valores de mercado = 0:", (df["valor_mercado"] == 0).sum())
     df.loc[df["calificacion_media"] == 0, "calificacion_media"] = None
     df.loc[df["valor_mercado"] == 0, "valor_mercado"] = None
 
-    # Tipos de datos: todo lo que es un conteo, a entero
     enteras = ["partidos_seleccion", "partidos_jugados", "minutos_jugados", "goles",
                "asistencias", "tiros", "tarjetas_amarillas", "tarjetas_rojas",
                "paradas", "goles_concedidos"]
@@ -492,18 +392,13 @@ def eventos_anomalos(eventos, partidos):
     Un evento es  anómalo cuando cumple algo de lo siguiente:
       1. Minuto negativo, es imposible.
       2. Minuto mayor que el máximo posible para ese partido:
-           - Que un partido sin prorroga dure mas que tiempo max (15 de descuento)
+           - Que un partido sin prorroga dure demasiado
            - partido con prórroga  + de 120. Al 121 es penalties
       3. Coherencia: un penalty de tanda en un partido que no ha llegado a penaltis.
       4. La selección del evento no es ninguna de las dos que juegan ese partido o el partido no existe
-
-    Los eventos SIN minuto (nulos) no se eliminan, se tratarán mas adelante.
-
-    Devuelve el DataFrame sin los eventos anómalos y con index_evento de 1 a n.
     """
     df = eventos.copy()
 
-    # Información del partido de cada evento (se busca por index_partido)
     df["prorroga"] = df["index_partido"].map(partidos["prorroga"])
     local = df["index_partido"].map(partidos["seleccion_local"])
     visitante = df["index_partido"].map(partidos["seleccion_visitante"])
@@ -522,7 +417,6 @@ def eventos_anomalos(eventos, partidos):
     # Máximo minuto posible en cada partido
     minuto_max = df["prorroga"].map({"SI": MINUTO_MAX_TANDA, "NO": MINUTO_MAX_REGLAMENTARIO})
 
-    # Condiciones de anomalía (los minutos nulos dan False -> no se eliminan)
     tipos_validos = set(TIPOS_EVENTO.values())
     es_tanda = df["tipo_evento"].isin(["Penalty marcado", "Penalty fallado"])
     condiciones = pd.DataFrame({
@@ -530,20 +424,17 @@ def eventos_anomalos(eventos, partidos):
         "Minuto mayor que el máximo": df["minuto_evento"] > minuto_max,
         "Tipo de evento no válido": ~df["tipo_evento"].isin(tipos_validos),
         "Penalty de tanda sin tanda": es_tanda & ~hubo_tanda,
-        "Selección que no juega el partido": (df["seleccion_evento"] != local) & (df["seleccion_evento"] != visitante),
-    })
+        "Selección que no juega el partido": (df["seleccion_evento"] != local) & (df["seleccion_evento"] != visitante)})
 
     # Resumen de cuántos eventos cumple cada condición
     print("\nEventos anómalos por motivo:\n", condiciones.sum())
     print("\nEventos anómalos detectados:")
     display(df[condiciones.any(axis=1)])
 
-    # Eliminamos los anómalos y quitamos la columna auxiliar
     df = df[~condiciones.any(axis=1)].drop(columns="prorroga")
     print(f"Eventos eliminados: {len(eventos) - len(df)}  |  Eventos finales: {len(df)}")
     print(f"Eventos sin minuto (se imputan en el paso 7): {df['minuto_evento'].isna().sum()}")
 
-    # index_evento consecutivo empezando en 1
     df = df.reset_index(drop=True)
     df.index = df.index + 1
     df.index.name = "index_evento"
@@ -554,11 +445,11 @@ def eventos_anomalos(eventos, partidos):
 
 if __name__ == "__main__":
 
-    # PASO 4 · Diagnóstico antes de limpiar
+    # PASO 4
     print("\n" + "#" * 80)
     print("PASO 4 · DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
     print("#" * 80)
-    # Duplicados exactos (solo informan)
+    # duplicados exactos
     duplicados_generales(partidos, "partidos")
     duplicados_generales(jugadores, "jugadores")
     duplicados_generales(eventos, "eventos")
@@ -566,12 +457,12 @@ if __name__ == "__main__":
     anomalos(partidos, "partidos")
     anomalos(jugadores, "jugadores")
     anomalos(eventos, "eventos")
-    # Gráficos de nulos antes de la limpieza
+    # gráficos de nulos antes de la limpieza
     grafico_nulos(partidos, "partidos (antes)")
     grafico_nulos(jugadores, "jugadores (antes)")
     grafico_nulos(eventos, "eventos (antes)")
 
-    # PASO 4 · Limpieza
+    # limpieza
     print("\n" + "#" * 80)
     print("PASO 4 · LIMPIEZA")
     print("#" * 80)
@@ -582,7 +473,7 @@ if __name__ == "__main__":
     print("\n--- eventos ---")
     eventos = limpiar_eventos(eventos)
 
-    # PASO 5 · Eventos anómalos
+    # PASO 5
     print("\n" + "#" * 80)
     print("PASO 5 · EVENTOS ANÓMALOS")
     print("#" * 80)
