@@ -294,8 +294,7 @@ def duplicados_negocio_index(df, columna, nombre_df):
 
 duplicados_negocio_index(partidos, "index_partido", "partidos")
 duplicados_negocio_index(jugadores, "nombre_jugador", "jugadores")
-# En eventos la clave de negocio son 4 columnas: mismo partido, minuto, jugador y tipo
-eventos = eventos.drop_duplicates(subset=["index_partido", "minuto_evento", "nombre_jugador", "tipo_evento"],keep="first")
+# En eventos los duplicados de negocio ya se eliminaron en 3.0 por event_id
 
 # 4.3 Análisis de nulos y anómalos
 
@@ -307,7 +306,7 @@ def anomalos_numerica(df, nombre):
     valores negativos hay (en este dataset ningún valor numérico debería
     ser negativo: goles, minutos, tarjetas...).
     """
-    num = df.select_dtypes(include="number") # solo columnas numéricas
+    num = df.select_dtypes(include="number") 
     print(f"\n===== {nombre} (numéricas) =====")
     print(num.describe())
     print("Nulos:\n", num.isna().sum())
@@ -321,26 +320,16 @@ def anomalos_categorica(df, nombre):
     Se usa repr() para que se vean los espacios sobrantes ('Quarter-finals ')
     y las variantes de escritura ('USA' / 'usa').
     """
-    cat = df.select_dtypes(exclude="number") # columnas no numéricas
+    cat = df.select_dtypes(exclude="number") 
     print(f"\n===== {nombre} (categóricas) =====")
     print((cat.isna().mean() * 100).round(2))
     for col in cat.columns:
         print(f"\n--- {col} ---\n", cat[col].map(repr).value_counts(dropna=False).head(10))
 
-def nulos(df, nombre):
+def anomalos(df, nombre):
     """Lanza los dos análisis anteriores (texto + numérico) sobre un DataFrame."""
     anomalos_categorica(df, nombre)
     anomalos_numerica(df, nombre)
-
-nulos(partidos, "partidos")
-#Empezamos limpiando los datos anomalos de partidos
-
-partidos["pais_partido"] = partidos["pais_partido"].replace("USA", "usa")
-# Los penaltis vienen multiplicados por 10 (30 = 3 penaltis). Dividimos entre 10
-# y ponemos 0 en los partidos sin tanda (el enunciado pide "0 si no aplica")
-for col in ["penalty_local", "penalty_visitante"]:
-    partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
-
 
 # 4.4 Funciones de limpieza de cada DataFrame
 
@@ -389,6 +378,8 @@ def limpiar_partidos(df):
     for col in ["ronda", "estadio", "ciudad_partido", "pais_partido",
                 "seleccion_local", "seleccion_visitante", "arbitro_partido"]:
         df[col] = df[col].str.strip()
+    for col in ["penalty_local", "penalty_visitante"]:
+        partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
     # Traducción de las rondas
     df["ronda"] = df["ronda"].replace(RONDAS)
     # País del estadio en mayúsculas (USA, MEX, CAN)
@@ -496,25 +487,17 @@ def limpiar_eventos(df):
 
 def eventos_anomalos(eventos, partidos):
     """
-    Detecta y elimina los eventos anómalos (paso 5).
+    Detecta y elimina los eventos anómalos
 
-    Un evento se considera anómalo si cumple alguna de estas condiciones:
-      1. Minuto negativo (ej. -45, -10): es imposible.
+    Un evento es  anómalo cuando cumple algo de lo siguiente:
+      1. Minuto negativo, es imposible.
       2. Minuto mayor que el máximo posible para ese partido:
-           - partido sin prórroga  -> más de 90 + 15 de descuento (105')
-           - partido con prórroga  -> más de 121' (la tanda se registra en el 121')
-      3. Tipo de evento que no está en la lista de tipos válidos.
-      4. Coherencia del tipo con el partido: un penalty de tanda en un partido
-         que no ha llegado a penaltis.
-      5. Coherencia de la selección: la selección del evento no es ninguna de
-         las dos que juegan ese partido (o el partido no existe).
+           - Que un partido sin prorroga dure mas que tiempo max (15 de descuento)
+           - partido con prórroga  + de 120. Al 121 es penalties
+      3. Coherencia: un penalty de tanda en un partido que no ha llegado a penaltis.
+      4. La selección del evento no es ninguna de las dos que juegan ese partido o el partido no existe
 
-    Los eventos SIN minuto (nulos) NO se eliminan: se imputan por interpolación
-    en el paso 7, como pide el enunciado.
-
-    Nota: hay 14 goles en los que el jugador es del equipo rival. No son
-    errores: son goles en propia puerta (el gol cuenta para el otro equipo),
-    por eso NO se consideran anómalos.
+    Los eventos SIN minuto (nulos) no se eliminan, se tratarán mas adelante.
 
     Devuelve el DataFrame sin los eventos anómalos y con index_evento de 1 a n.
     """
@@ -579,9 +562,10 @@ if __name__ == "__main__":
     duplicados_generales(partidos, "partidos")
     duplicados_generales(jugadores, "jugadores")
     duplicados_generales(eventos, "eventos")
-    # Nulos y anómalos de jugadores y eventos (los de partidos ya se ven arriba)
-    nulos(jugadores, "jugadores")
-    nulos(eventos, "eventos")
+    # Nulos y anómalos de jugadores y eventos
+    anomalos(partidos, "partidos")
+    anomalos(jugadores, "jugadores")
+    anomalos(eventos, "eventos")
     # Gráficos de nulos antes de la limpieza
     grafico_nulos(partidos, "partidos (antes)")
     grafico_nulos(jugadores, "jugadores (antes)")
