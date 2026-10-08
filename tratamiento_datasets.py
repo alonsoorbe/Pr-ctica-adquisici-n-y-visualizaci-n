@@ -5,6 +5,7 @@ import pandas as pd
 from IPython.display import display
 import matplotlib.pyplot as plt
 import re
+from sklearn.linear_model import LinearRegression
 
 
 # minutos que consideramos anómalos
@@ -412,15 +413,29 @@ def limpiar_fechas(df, columna):
     """"""
     df = df.copy()
     df[columna] = df[columna].str.strip()
-    expr_punto = r"(\d{2}).(\d{2}).(\d{4})"
-    expr_guion = r"(\d{2})-(\d{2})-(\d{4})"
-    expr_letra_espacio= r"(Jul)\s(\d{2})\s(\d{4})"
-    expr_complex = r"(\d{4})-(\d{2})-(\d{2})T(\w+)"
+    expr_punto = r"^(\d{2}).(\d{2}).(\d{4})$"
+    expr_guion = r"^(\d{2})-(\d{2})-(\d{4})$"
+    expr_complex = r"^(\d{4})-(\d{2})-(\d{2})T.*$"
+    expr_juntos = r"^(\d{4})(\d{2})(\d{2})$"
+    expr_letra_espacio = r"^([A-Za-z]+) (\d{1,2}),? (\d{4})$"
+    expr_letra_guion = r"^(\d{1,2})-([a-z]+)-(\d{2})$"
 
     df[columna] = df[columna].str.replace( expr_punto, r"\1/\2/\3", regex = True) #Coge el primer parentesis, elsegundo...
     df[columna] = df[columna].str.replace( expr_guion, r"\2/\1/\3", regex = True)
-    df[columna] = df[columna].str.replace( expr_letra_espacio, r"\2/07/\3", regex = True)
     df[columna] = df[columna].str.replace( expr_complex, r"\3/\2/\1", regex = True)
+    df[columna] = df[columna].str.replace(expr_juntos, r"\3/\2/\1", regex=True)
+
+    df[columna] = df[columna].str.replace(expr_letra_espacio, r"\2 \1 \3", regex=True)    
+    df[columna] = df[columna].str.replace(expr_letra_guion, r"\1 \2 20\3", regex=True)  
+    df[columna] = df[columna].str.replace(" de ", " ")                                                     
+
+    meses = {"June": "06", "Jun": "06", "jun": "06", "junio": "06",
+             "July": "07", "Jul": "07", "jul": "07", "julio": "07"}
+    for nombre, numero in meses.items():   #Cambiamos el mes por su número
+        df[columna] = df[columna].str.replace(rf"^(\d{{1,2}}) {nombre} (\d{{4}})$", rf"\1/{numero}/\2", regex=True)
+
+    df[columna] = pd.to_datetime(df[columna], format="%d/%m/%Y") #Indica el formato de la fecha
+    
     return df
 
 # 7. RELLENO DE DATOS POR IMPUTACIÓN
@@ -429,11 +444,51 @@ def limpiar_fechas(df, columna):
 
 def imputacion_media(df, columna: str):
     df = df.copy()
-    df[columna].hist(bins=20)
-    media_uso = df.groupby(["seleccion_nacional"])[columna].transform("mean")
+    media_uso = df.groupby("seleccion_nacional")[columna].transform("mean")
     df[columna] = df[columna].fillna(media_uso)
+    return df
 
-#def imputacion_calificacion_regresion(df, columna):
+
+# 7.2 IMPUTACIÓN POR REGRESIÓN DE CALFICACIÓN MEDIA
+
+def imputacion_calificacion_regresion(df, columna):
+    df = df.copy()
+    vars_porteros = ["goles_concedidos", "paradas", "tarjetas_rojas", "tarjetas_amarillas"]
+    vars_jugadores = ["asistencias", "tarjetas_amarillas", "tarjetas_rojas", "goles"]
+    es_portero = df["posicion"] == "Portero"
+    grupos = {"porteros": (es_portero, vars_porteros),"jugadores": (~es_portero, vars_jugadores)}
+
+    for nombre, (mask_grupo, variables) in grupos.items():
+        df[variables] = df[variables].fillna(0)
+
+        conocidos = df[mask_grupo & df[columna].notna()]
+        desconocidos = df[mask_grupo & df[columna].isna()]
+        if len(desconocidos) == 0:
+            continue
+
+        X = conocidos[variables]
+        y = conocidos[columna]
+
+        modelo = LinearRegression()
+        modelo.fit(X, y)
+        for i in range(len(variables)):
+            print(variables[i], modelo.coef_[i])
+
+        print("b:", modelo.intercept_)
+        print("R²:", modelo.score(X, y))
+        df.loc[desconocidos.index, columna] = modelo.predict(desconocidos[variables])
+    return df
+
+# 7.3 IMPUTACIÓN POR INTERPOLACIÖN DE MINUTO EVENTO
+
+#def imputacion_min_evento(df, columna):
+
+
+
+
+
+
+
 
 
 
