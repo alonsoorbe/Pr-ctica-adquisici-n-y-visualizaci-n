@@ -4,6 +4,7 @@
 import pandas as pd
 from IPython.display import display
 import matplotlib.pyplot as plt
+import re
 
 
 # minutos que consideramos anómalos
@@ -405,51 +406,97 @@ def eventos_anomalos(eventos, partidos):
     return df
 
 
+# 6. LIMPIEZA COLUMNA FECHA PARTIDO
+
+def limpiar_fechas(df, columna):
+    """"""
+    df = df.copy()
+    df[columna] = df[columna].str.strip()
+    expr_punto = r"(\d{2}).(\d{2}).(\d{4})"
+    expr_guion = r"(\d{2})-(\d{2})-(\d{4})"
+    expr_letra_espacio= r"(Jul)\s(\d{2})\s(\d{4})"
+    expr_complex = r"(\d{4})-(\d{2})-(\d{2})T(\w+)"
+
+    df[columna] = df[columna].str.replace( expr_punto, r"\1/\2/\3", regex = True) #Coge el primer parentesis, elsegundo...
+    df[columna] = df[columna].str.replace( expr_guion, r"\2/\1/\3", regex = True)
+    df[columna] = df[columna].str.replace( expr_letra_espacio, r"\2/07/\3", regex = True)
+    df[columna] = df[columna].str.replace( expr_complex, r"\3/\2/\1", regex = True)
+    return df
+
+# 7. RELLENO DE DATOS POR IMPUTACIÓN
+
+# 7.1 IMPUTACIÓN POR LA MEDIA VALOR MERCADO
+
+def imputacion_media(df, columna: str):
+    df = df.copy()
+    df[columna].hist(bins=20)
+    media_uso = df.groupby(["seleccion_nacional"])[columna].transform("mean")
+    df[columna] = df[columna].fillna(media_uso)
+
+#def imputacion_calificacion_regresion(df, columna):
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+
 # MAIN
 
 if __name__ == "__main__":
 
     # PASO 4
-    print("\n" + "#"*80)
-    print("PASO 4 · DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
-    print("#"*80)
-    # duplicados exactos
-    duplicados_generales(partidos, "partidos")
-    duplicados_generales(jugadores, "jugadores")
-    duplicados_generales(eventos, "eventos")
-    # Nulos y anómalos de jugadores y eventos
-    anomalos(partidos, "partidos")
-    anomalos(jugadores, "jugadores")
-    anomalos(eventos, "eventos")
-    # gráficos de nulos antes de la limpieza
-    grafico_nulos(partidos, "partidos (antes)")
-    grafico_nulos(jugadores, "jugadores (antes)")
-    grafico_nulos(eventos, "eventos (antes)")
+    #print("\n" + "#"*80)
+    #print("PASO 4 · DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
+    #print("#"*80)
+    ## duplicados exactos
+    #duplicados_generales(partidos, "partidos")
+    #duplicados_generales(jugadores, "jugadores")
+    #duplicados_generales(eventos, "eventos")
+    ## Nulos y anómalos de jugadores y eventos
+    #anomalos(partidos, "partidos")
+    #anomalos(jugadores, "jugadores")
+    #anomalos(eventos, "eventos")
+    ## gráficos de nulos antes de la limpieza
+    #grafico_nulos(partidos, "partidos (antes)")
+    #grafico_nulos(jugadores, "jugadores (antes)")
+    #grafico_nulos(eventos, "eventos (antes)")
+#
+    ## limpieza
+    #print("\n" + "#"*80)
+    #print("PASO 4 · LIMPIEZA")
+    #print("#"*80)
+    #print("\n--- partidos ---")
+    #partidos = limpiar_partidos(partidos)
+    #print("\n--- jugadores ---")
+    #jugadores = limpiar_jugadores(jugadores)
+    #print("\n--- eventos ---")
+    #eventos = limpiar_eventos(eventos)
+#
+    ## PASO 5
+    #print("\n" + "#"*80)
+    #print("PASO 5 · EVENTOS ANÓMALOS")
+    #print("#" * 80)
+    #eventos = eventos_anomalos(eventos, partidos)
+#
+#
+    #print("\n" + "#"*80)
+    #print("RESULTADO TRAS LOS PASOS 1-5")
+    #print("#"*80)
+    #exploration(partidos, "partidos (limpio)")
+    #exploration(jugadores, "jugadores (limpio)")
+    #exploration(eventos, "eventos (limpio)")
+    #grafico_nulos(partidos, "partidos (después)")
+    #grafico_nulos(jugadores, "jugadores (después)")
+    #grafico_nulos(eventos, "eventos (después)")
 
-    # limpieza
-    print("\n" + "#"*80)
-    print("PASO 4 · LIMPIEZA")
-    print("#"*80)
-    print("\n--- partidos ---")
-    partidos = limpiar_partidos(partidos)
-    print("\n--- jugadores ---")
-    jugadores = limpiar_jugadores(jugadores)
-    print("\n--- eventos ---")
-    eventos = limpiar_eventos(eventos)
-
-    # PASO 5
-    print("\n" + "#"*80)
-    print("PASO 5 · EVENTOS ANÓMALOS")
-    print("#" * 80)
-    eventos = eventos_anomalos(eventos, partidos)
-
-
-    print("\n" + "#"*80)
-    print("RESULTADO TRAS LOS PASOS 1-5")
-    print("#"*80)
-    exploration(partidos, "partidos (limpio)")
-    exploration(jugadores, "jugadores (limpio)")
-    exploration(eventos, "eventos (limpio)")
-    grafico_nulos(partidos, "partidos (después)")
-    grafico_nulos(jugadores, "jugadores (después)")
-    grafico_nulos(eventos, "eventos (después)")
+    partidos = limpiar_fechas(partidos, "fecha_partido")
+    display(partidos["fecha_partido"].value_counts())
