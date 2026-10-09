@@ -522,9 +522,9 @@ def exportar_excel(df1, df2, df3, df1_name, df2_name, df3_name):
     df2.to_excel("eventosWC26.xlsx")
     df3.to_excel("jugadoresWC2026.xlsx")
     print(f'''Los Data Frames has sido exportados:\n
-          {df1} -> partidosWC26.xlsx,\n
-          {df2} -> eventosWC26.xlsx,\n
-          {df3} -> jugadoresWC2026.xlsx''')
+          {df1_name} -> partidosWC26.xlsx,\n
+          {df2_name} -> eventosWC26.xlsx,\n
+          {df3_name} -> jugadoresWC2026.xlsx''')
     
 
 # MAIN
@@ -579,23 +579,32 @@ if __name__ == "__main__":
     # Paso 6
     print("\n" + "#"*80)
     print("PASO 6 -> LIMPIEZA DE FECHAS")
+    print("#"*80, "\n")
     partidos = limpiar_fechas(partidos, "fecha_partido")
     print(f'Columna de fechas partidos renovada:\n {display(partidos["fecha_partido"].value_counts())}')
 
     # Paso 7
     print("\n" + "#"*80)
     print("PASO 7 -> IMPUTACIÓN POR MEDIA, REGRESIÓN E INTERPOLACIÓN")
+    print("#"*80, "\n")
     df_media_limp = imputacion_media(jugadores, "valor_mercado")
-    print(f"Datos nulos de valor mercado antes: {jugadores["valor_mercado"].isna().sum()}")
-    print(f"Datos nulos de valor mercado después: {df_media_limp["valor_mercado"].isna().sum()}")
-    df_calific = imputacion_calificacion_regresion(jugadores, "calificacion_media")
-    print(f"Datos nulos de calificación media antes: {jugadores["calificacion_media"].isna().sum()}")
-    print(f"Datos nulos de calificación media despues: {df_calific["calificacion_media"].isna().sum()}")
+    df_calific = imputacion_calificacion_regresion(df_media_limp, "calificacion_media")
     df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
-    print(f"Datos nulos de minuto evento antes: {eventos["minuto_evento"].isna().sum()}")
-    print(f"Datos nulos de minuto evento despues: {df_evento_limp["minuto_evento"].isna().sum()}")
+    resultados = [
+        ("valor_mercado",      jugadores, df_media_limp),
+        ("calificacion_media", jugadores, df_calific),
+        ("minuto_evento",      eventos,   df_evento_limp),
+    ]
+    tabla_nulos = pd.DataFrame(
+        {col: [antes[col].isna().sum(), despues[col].isna().sum()]
+        for col, antes, despues in resultados},
+        index=["Nulos antes", "Nulos después"],
+    )
+    display(tabla_nulos)
+    jugadores, eventos = df_calific, df_evento_limp
 
     # Paso 8
     print("\n" + "#"*80)
     print("PASO 8 -> EXPORTACIÓN DE DATA FRAMES A EXCEL")
+    print("#"*80, "\n")
     exportar_excel(partidos, jugadores, eventos, "partidos", "jugadores", "eventos")
