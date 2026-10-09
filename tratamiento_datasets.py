@@ -410,13 +410,17 @@ def eventos_anomalos(eventos, partidos):
 # 6. LIMPIEZA COLUMNA FECHA PARTIDO
 
 def limpiar_fechas(df, columna):
-    """"""
+    """
+    Esta función limpia las fechas escribiendolas todas en el mismo formato (Dia/Mes/Año). Primero cambia 
+    las fechas con algún símbolo mal o en distinto orden, y luego las que tienen letras o palabras
+    """
     df = df.copy()
     df[columna] = df[columna].str.strip()
-    expr_punto = r"^(\d{2}).(\d{2}).(\d{4})$"
+    expr_punto = r"^(\d{2})\.(\d{2})\.(\d{4})$"
     expr_guion = r"^(\d{2})-(\d{2})-(\d{4})$"
     expr_complex = r"^(\d{4})-(\d{2})-(\d{2})T.*$"
     expr_juntos = r"^(\d{4})(\d{2})(\d{2})$"
+
     expr_letra_espacio = r"^([A-Za-z]+) (\d{1,2}),? (\d{4})$"
     expr_letra_guion = r"^(\d{1,2})-([a-z]+)-(\d{2})$"
 
@@ -435,8 +439,9 @@ def limpiar_fechas(df, columna):
         df[columna] = df[columna].str.replace(rf"^(\d{{1,2}}) {nombre} (\d{{4}})$", rf"\1/{numero}/\2", regex=True)
 
     df[columna] = pd.to_datetime(df[columna], format="%d/%m/%Y") #Indica el formato de la fecha
-    
+
     return df
+
 
 # 7. RELLENO DE DATOS POR IMPUTACIÓN
 
@@ -481,7 +486,8 @@ def imputacion_calificacion_regresion(df, columna):
 
 # 7.3 IMPUTACIÓN POR INTERPOLACIÖN DE MINUTO EVENTO
 
-#def imputacion_min_evento(df, columna):
+def imputacion_min_evento(df, columna):
+    print("hola")
 
 
 
