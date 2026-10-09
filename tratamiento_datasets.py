@@ -448,6 +448,10 @@ def limpiar_fechas(df, columna):
 # 7.1 IMPUTACIÓN POR LA MEDIA VALOR MERCADO
 
 def imputacion_media(df, columna: str):
+    """
+    Esta función agrupa el DataFrame por su selección y se queda con la columna de valor mercado.
+    A continuación hace la media de cada selección y por último usa esa media para rellenar los valores nulos
+    """
     df = df.copy()
     media_uso = df.groupby("seleccion_nacional")[columna].transform("mean")
     df[columna] = df[columna].fillna(media_uso)
@@ -457,6 +461,11 @@ def imputacion_media(df, columna: str):
 # 7.2 IMPUTACIÓN POR REGRESIÓN DE CALFICACIÓN MEDIA
 
 def imputacion_calificacion_regresion(df, columna):
+    """
+    Esta función filtra los datos de si es portero o no con una mascara. Una vez tenemos los datos filtrados,
+    rellenamos la información nula mediante una regresión
+    """
+
     df = df.copy()
     vars_porteros = ["goles_concedidos", "paradas", "tarjetas_rojas", "tarjetas_amarillas"]
     vars_jugadores = ["asistencias", "tarjetas_amarillas", "tarjetas_rojas", "goles"]
@@ -486,78 +495,99 @@ def imputacion_calificacion_regresion(df, columna):
 
 # 7.3 IMPUTACIÓN POR INTERPOLACIÖN DE MINUTO EVENTO
 
+def compare_with_baseline(df, columna):
+    new_data = df.loc[df[columna].isna()] # detectamos los valores imputados
+    plt.scatter(df.index, df[columna]) # dibujamos los datos originales 
+    plt.scatter(new_data.index, new_data[columna], color="red")
+
 def imputacion_min_evento(df, columna):
-    print("hola")
+    """
+    Está función rellena los datos nulos mediante interpolación, 
+    teniendo en cuenta que primero ordenamos los datos según index partido para que los datos con los que lo rellene 
+    tengan mas coherencia
+    """
+    df = df.copy()
+    df[columna] = df.groupby("index_partido")[columna].transform(lambda min : min.interpolate("linear")).bfill()
+    compare_with_baseline(df,columna)
 
+    return df
 
+# 8 EXPORTACIÓN DE LOS DATA FRAMES A FICHEROS EXCEL
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+def exportar_excel(df1, df2, df3):
+    """
+    Esta función exporta los tres data frames creados a ficheros excel
+    """
+    df1.to_excel("partidosWC26.xlsx")
+    df2.to_excel("eventosWC26.xlsx")
+    df3.to_excel("jugadoresWC2026.xlsx")
+    print(f'''Los Data Frames has sido exportados:\n
+          {df1} -> partidosWC26.xlsx,\n
+          {df2} -> eventosWC26.xlsx,\n
+          {df3} -> jugadoresWC2026.xlsx''')
     
-
-
-
-
 
 # MAIN
 
 if __name__ == "__main__":
 
     # PASO 4
-    #print("\n" + "#"*80)
-    #print("PASO 4 · DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
-    #print("#"*80)
-    ## duplicados exactos
-    #duplicados_generales(partidos, "partidos")
-    #duplicados_generales(jugadores, "jugadores")
-    #duplicados_generales(eventos, "eventos")
-    ## Nulos y anómalos de jugadores y eventos
-    #anomalos(partidos, "partidos")
-    #anomalos(jugadores, "jugadores")
-    #anomalos(eventos, "eventos")
-    ## gráficos de nulos antes de la limpieza
-    #grafico_nulos(partidos, "partidos (antes)")
-    #grafico_nulos(jugadores, "jugadores (antes)")
-    #grafico_nulos(eventos, "eventos (antes)")
-#
-    ## limpieza
-    #print("\n" + "#"*80)
-    #print("PASO 4 · LIMPIEZA")
-    #print("#"*80)
-    #print("\n--- partidos ---")
-    #partidos = limpiar_partidos(partidos)
-    #print("\n--- jugadores ---")
-    #jugadores = limpiar_jugadores(jugadores)
-    #print("\n--- eventos ---")
-    #eventos = limpiar_eventos(eventos)
-#
-    ## PASO 5
-    #print("\n" + "#"*80)
-    #print("PASO 5 · EVENTOS ANÓMALOS")
-    #print("#" * 80)
-    #eventos = eventos_anomalos(eventos, partidos)
-#
-#
-    #print("\n" + "#"*80)
-    #print("RESULTADO TRAS LOS PASOS 1-5")
-    #print("#"*80)
-    #exploration(partidos, "partidos (limpio)")
-    #exploration(jugadores, "jugadores (limpio)")
-    #exploration(eventos, "eventos (limpio)")
-    #grafico_nulos(partidos, "partidos (después)")
-    #grafico_nulos(jugadores, "jugadores (después)")
-    #grafico_nulos(eventos, "eventos (después)")
+    print("\n" + "#"*80)
+    print("PASO 4 -> DIAGNÓSTICO DE DUPLICADOS, NULOS Y ANÓMALOS")
+    print("#"*80)
+    # duplicados exactos
+    duplicados_generales(partidos, "partidos")
+    duplicados_generales(jugadores, "jugadores")
+    duplicados_generales(eventos, "eventos")
+    # Nulos y anómalos de jugadores y eventos
+    anomalos(partidos, "partidos")
+    anomalos(jugadores, "jugadores")
+    anomalos(eventos, "eventos")
+    # gráficos de nulos antes de la limpieza
+    grafico_nulos(partidos, "partidos (antes)")
+    grafico_nulos(jugadores, "jugadores (antes)")
+    grafico_nulos(eventos, "eventos (antes)")
 
-    partidos = limpiar_fechas(partidos, "fecha_partido")
-    display(partidos["fecha_partido"].value_counts())
+    # limpieza
+    print("\n" + "#"*80)
+    print("PASO 4 -> LIMPIEZA")
+    print("#"*80)
+    print("\n--- partidos ---")
+    partidos = limpiar_partidos(partidos)
+    print("\n--- jugadores ---")
+    jugadores = limpiar_jugadores(jugadores)
+    print("\n--- eventos ---")
+    eventos = limpiar_eventos(eventos)
+
+    # PASO 5
+    print("\n" + "#"*80)
+    print("PASO 5 -> EVENTOS ANÓMALOS")
+    print("#" * 80)
+    eventos = eventos_anomalos(eventos, partidos)
+
+
+    print("\n" + "#"*80)
+    print("RESULTADO TRAS LOS PASOS 1-5")
+    print("#"*80)
+    exploration(partidos, "partidos (limpio)")
+    exploration(jugadores, "jugadores (limpio)")
+    exploration(eventos, "eventos (limpio)")
+    grafico_nulos(partidos, "partidos (después)")
+    grafico_nulos(jugadores, "jugadores (después)")
+    grafico_nulos(eventos, "eventos (después)")
+    # Paso 6
+    print("\n" + "#"*80)
+    print("PASO 6 -> LIMPIEZA DE FECHAS")
+
+    # Paso 7
+    print("\n" + "#"*80)
+    print("PASO 7 -> IMPUTACIÓN POR MEDIA, REGRESIÓN E INTERPOLACIÓN")
+    df_media_limp = imputacion_media(jugadores, "valor_mercado")
+    print(f"Datos nulos de valor mercado antes: {jugadores["valor_mercado"].isna().sum()}")
+    print(f"Datos nulos de valor mercado después: {df_media_limp["valor_mercado"].isna().sum()}")
+    df_calific = imputacion_calificacion_regresion(jugadores, "calificacion_media")
+    print(f"Datos nulos de calificación media antes: {jugadores["calificacion_media"].isna().sum()}")
+    print(f"Datos nulos de calificación media despues: {df_calific["calificacion_media"].isna().sum()}")
+    df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
+    print(f"Datos nulos de minuto evento antes: {eventos["minuto_evento"].isna().sum()}")
+    print(f"Datos nulos de minuto evento despues: {df_evento_limp["minuto_evento"].isna().sum()}")
