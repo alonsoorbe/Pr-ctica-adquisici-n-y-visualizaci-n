@@ -514,7 +514,7 @@ def imputacion_min_evento(df, columna):
 
 # 8 EXPORTACIÓN DE LOS DATA FRAMES A FICHEROS EXCEL
 
-def exportar_excel(df1, df2, df3):
+def exportar_excel(df1, df2, df3, df1_name, df2_name, df3_name):
     """
     Esta función exporta los tres data frames creados a ficheros excel
     """
@@ -575,9 +575,12 @@ if __name__ == "__main__":
     grafico_nulos(partidos, "partidos (después)")
     grafico_nulos(jugadores, "jugadores (después)")
     grafico_nulos(eventos, "eventos (después)")
+
     # Paso 6
     print("\n" + "#"*80)
     print("PASO 6 -> LIMPIEZA DE FECHAS")
+    partidos = limpiar_fechas(partidos, "fecha_partido")
+    print(f'Columna de fechas partidos renovada:\n {display(partidos["fecha_partido"].value_counts())}')
 
     # Paso 7
     print("\n" + "#"*80)
@@ -591,3 +594,8 @@ if __name__ == "__main__":
     df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
     print(f"Datos nulos de minuto evento antes: {eventos["minuto_evento"].isna().sum()}")
     print(f"Datos nulos de minuto evento despues: {df_evento_limp["minuto_evento"].isna().sum()}")
+
+    # Paso 8
+    print("\n" + "#"*80)
+    print("PASO 8 -> EXPORTACIÓN DE DATA FRAMES A EXCEL")
+    exportar_excel(partidos, jugadores, eventos, "partidos", "jugadores", "eventos")
