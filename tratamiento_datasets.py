@@ -288,7 +288,7 @@ def limpiar_partidos(df):
                 "seleccion_local", "seleccion_visitante", "arbitro_partido"]:
         df[col] = df[col].str.strip()  # Quitamos espacios
     for col in ["penalty_local", "penalty_visitante"]:
-        partidos[col] = (partidos[col] / 10).fillna(0).astype(int)
+        df[col] = (df[col] / 10).fillna(0).astype(int)
     # Traduccion ronda(al principio están las conversiones)
     df["ronda"] = df["ronda"].replace(RONDAS)
     df["pais_partido"] = df["pais_partido"].str.upper()
@@ -421,19 +421,25 @@ def limpiar_fechas(df, columna):
     expr_letra_espacio = r"^([A-Za-z]+) (\d{1,2}),? (\d{4})$"
     expr_letra_guion = r"^(\d{1,2})-([a-z]+)-(\d{2})$"
 
-    df[columna] = df[columna].str.replace( expr_punto, r"\1/\2/\3", regex = True) #Coge el primer parentesis, elsegundo...
-    df[columna] = df[columna].str.replace( expr_guion, r"\2/\1/\3", regex = True)
-    df[columna] = df[columna].str.replace( expr_complex, r"\3/\2/\1", regex = True)
-    df[columna] = df[columna].str.replace(expr_juntos, r"\3/\2/\1", regex=True)
+    expr_cambio = r"^(\d{2})/(\d{2})/(\d{4})$"
 
-    df[columna] = df[columna].str.replace(expr_letra_espacio, r"\2 \1 \3", regex=True)    
-    df[columna] = df[columna].str.replace(expr_letra_guion, r"\1 \2 20\3", regex=True)  
+    df[columna] = df[columna].str.replace(expr_punto, r"\1/\2/\3", regex = True) #Coge el primer parentesis, elsegundo...
+    df[columna] = df[columna].str.replace(expr_guion, r"\2/\1/\3", regex = True)
+    df[columna] = df[columna].str.replace(expr_complex, r"\3/\2/\1", regex = True)
+    df[columna] = df[columna].str.replace(expr_juntos, r"\3/\2/\1", regex = True)
+
+    df[columna] = df[columna].str.replace(expr_letra_espacio, r"\2 \1 \3", regex = True)    
+    df[columna] = df[columna].str.replace(expr_letra_guion, r"\1 \2 20\3", regex = True)  
     df[columna] = df[columna].str.replace(" de ", " ")                                                     
 
     meses = {"June": "06", "Jun": "06", "jun": "06", "junio": "06",
              "July": "07", "Jul": "07", "jul": "07", "julio": "07"}
     for nombre, numero in meses.items():   #Cambiamos el mes por su número
-        df[columna] = df[columna].str.replace(rf"^(\d{{1,2}}) {nombre} (\d{{4}})$", rf"\1/{numero}/\2", regex=True)
+        df[columna] = df[columna].str.replace(rf"^(\d{{1,2}}) {nombre} (\d{{4}})$", rf"\1/{numero}/\2", regex = True)
+
+    mes = df[columna].str.extract(expr_cambio)[1]
+    mal_escritas = ~mes.isin(["06", "07"]) & mes.notna()
+    df.loc[mal_escritas, columna] = df.loc[mal_escritas, columna].str.replace(expr_cambio, r"\2/\1/\3", regex = True)
 
     df[columna] = pd.to_datetime(df[columna], format="%d/%m/%Y") #Indica el formato de la fecha
 
@@ -516,11 +522,11 @@ def exportar_excel(df1, df2, df3, df1_name, df2_name, df3_name):
     Esta función exporta los tres data frames creados a ficheros excel
     """
     df1.to_excel("partidosWC26.xlsx")
-    df2.to_excel("eventosWC26.xlsx")
-    df3.to_excel("jugadoresWC2026.xlsx")
+    df2.to_excel("jugadoresWC2026.xlsx")
+    df3.to_excel("eventosWC26.xlsx")
     print(f'''Los Data Frames has sido exportados:\n
-          {df1_name} -> partidosWC26.xlsx,\n
-          {df2_name} -> eventosWC26.xlsx,\n
+          {df1_name} -> partidosWC26.xlsx\n
+          {df2_name} -> jugadoresWC2026.xlsx\n
           {df3_name} -> jugadoresWC2026.xlsx''')
     
 
@@ -587,12 +593,27 @@ if __name__ == "__main__":
     df_media_limp = imputacion_media(jugadores, "valor_mercado")
     df_calific = imputacion_calificacion_regresion(df_media_limp, "calificacion_media")
     df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
+<<<<<<< HEAD
     resultados = [("valor_mercado",jugadores, df_media_limp),("calificacion_media", jugadores, df_calific),("minuto_evento", eventos,df_evento_limp)]
     tabla_nulos = pd.DataFrame(
         {col: [antes[col].isna().sum(), despues[col].isna().sum()]
         for col, antes, despues in resultados},
         index=["Nulos antes", "Nulos después"])
     display(tabla_nulos)
+=======
+    resultados = [
+        ("valor_mercado",      jugadores, df_media_limp),
+        ("calificacion_media", jugadores, df_calific),
+        ("minuto_evento",      eventos,   df_evento_limp),
+    ]
+    tabla_nulos = {}
+    for col, antes, despues in resultados:
+        nulos_antes = antes[col].isna().sum()
+        nulos_despues = despues[col].isna().sum()
+        tabla_nulos[col] = [nulos_antes, nulos_despues]
+    resumen_nulos = pd.DataFrame(tabla_nulos, index=["Nulos antes", "Nulos después"])
+    display(resumen_nulos)
+>>>>>>> e5cea6c913b1cbd61f82a5517e30277bcfa5f2d2
     jugadores, eventos = df_calific, df_evento_limp
 
     # Paso 8
