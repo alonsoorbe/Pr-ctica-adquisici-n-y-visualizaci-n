@@ -4,7 +4,6 @@
 import pandas as pd
 from IPython.display import display
 import matplotlib.pyplot as plt
-import re
 from sklearn.linear_model import LinearRegression
 
 
@@ -69,7 +68,7 @@ datasets_originales = {
     "worldcup_venues": worldcup_venues_df}
 
 
-# Primero hacemos una función que nos permite ver y analizar a lo que nos enfrentamos
+# Primero hacemos una función que nos permite ver y analizar todos los datos de los ficheros
 def exploration(df, nombre):
     """
     Exploración inicial de un DataFrame.
@@ -82,7 +81,7 @@ def exploration(df, nombre):
 
     Parámetros
       df     : DataFrame.
-      nombre : nombre de df como texto
+      nombre : nombre de df
     """
     print("\n" + "=" * 80)
     print(f"DATASET: {nombre}")
@@ -112,8 +111,6 @@ caracteristicas_eventos = ["minuto_evento", "index_partido", "nombre_jugador", "
 
 
 # 3. CONSTRUCCIÓN DE LOS DATAFRAMES
-
-# DataFrame de partidos
 
 # Mediante merges, cogeremos DataFrame a DataFrame para ver que relación tiene e ir haciendo merges poco a poco
 # Primero cogemos de base el matches_mundial_seis_df, que es el que más datos tiene de los que necesitamos
@@ -211,7 +208,7 @@ eventos.index.name = "index_evento"
 #Empezamos con valores duplicados generales
 def duplicados_generales(df, nombre):
     """
-    Informa de los duplicados exactos (filas idénticas) de un DataFrame.
+    Devuelve el número de duplicados exactos (filas idénticas) de un DataFrame
     """
     print(f"Número de duplicados exactos en {nombre}: {df.duplicated().sum()}")
 
@@ -248,11 +245,11 @@ def anomalos_categorica(df, nombre):
     Imprime el % de nulos de cada columna y los 10 valores más frecuentes.
     Se usa repr() apreciar espacios y palabras escritas de distinta forma
     """
-    cat = df.select_dtypes(exclude="number") 
+    categ = df.select_dtypes(exclude="number") 
     print(f"\n===== {nombre} (categóricas) =====")
-    print((cat.isna().mean() * 100).round(2))
-    for col in cat.columns:
-        print(f"\n--- {col} ---\n", cat[col].map(repr).value_counts(dropna=False).head(10))
+    print((categ.isna().mean() * 100).round(2))
+    for col in categ.columns:
+        print(f"\n--- {col} ---\n", categ[col].map(repr).value_counts(dropna=False).head(10))  # Basicamente map(repr) le pone '' para ver todos los caracteres q tiene
 
 def anomalos(df, nombre):
     """
@@ -353,7 +350,7 @@ def eventos_anomalos(eventos, partidos):
     Detecta y elimina los eventos anómalos
 
     Un evento es  anómalo cuando cumple algo de lo siguiente:
-      1. Minuto negativo, es imposible.
+      1. Minuto negativo
       2. Minuto mayor que el máximo posible para ese partido:
            - Que un partido sin prorroga dure demasiado
            - partido con prórroga  + de 120. Al 121 es penalties
@@ -365,7 +362,7 @@ def eventos_anomalos(eventos, partidos):
     df["prorroga"] = df["index_partido"].map(partidos["prorroga"])
     local = df["index_partido"].map(partidos["seleccion_local"])
     visitante = df["index_partido"].map(partidos["seleccion_visitante"])
-    hubo_tanda = df["index_partido"].map(partidos["penalty_local"] + partidos["penalty_visitante"]) > 0
+    hubo_tanda = df["index_partido"].map(partidos["penalty_local"] + partidos["penalty_visitante"]) > 0   # True cuando hubo False cuando no, es decir 8 > 0 = True, 0 > 0 = False
 
     # Histograma de los minutos para ver los valores raros
     ax = df["minuto_evento"].plot(kind="hist", bins=40, title="Distribución de minutos de los eventos")
@@ -380,7 +377,7 @@ def eventos_anomalos(eventos, partidos):
     # Máximo minuto posible en cada partido
     minuto_max = df["prorroga"].map({"SI": MINUTO_MAX_TANDA, "NO": MINUTO_MAX_REGLAMENTARIO})
 
-    tipos_validos = set(TIPOS_EVENTO.values())
+    tipos_validos = set(TIPOS_EVENTO.values())   # values coge el español de tipos evento y set qiita repetidos
     es_tanda = df["tipo_evento"].isin(["Penalty marcado", "Penalty fallado"])
     condiciones = pd.DataFrame({
         "Minuto negativo": df["minuto_evento"] < 0,
@@ -454,7 +451,7 @@ def imputacion_media(df, columna: str):
     """
     df = df.copy()
     media_uso = df.groupby("seleccion_nacional")[columna].transform("mean")
-    df[columna] = df[columna].fillna(media_uso)
+    df[columna] = df[columna].fillna(media_uso)   #Busca por indice y rellena con media_uso
     return df
 
 
@@ -590,16 +587,11 @@ if __name__ == "__main__":
     df_media_limp = imputacion_media(jugadores, "valor_mercado")
     df_calific = imputacion_calificacion_regresion(df_media_limp, "calificacion_media")
     df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
-    resultados = [
-        ("valor_mercado",      jugadores, df_media_limp),
-        ("calificacion_media", jugadores, df_calific),
-        ("minuto_evento",      eventos,   df_evento_limp),
-    ]
+    resultados = [("valor_mercado",jugadores, df_media_limp),("calificacion_media", jugadores, df_calific),("minuto_evento", eventos,df_evento_limp)]
     tabla_nulos = pd.DataFrame(
         {col: [antes[col].isna().sum(), despues[col].isna().sum()]
         for col, antes, despues in resultados},
-        index=["Nulos antes", "Nulos después"],
-    )
+        index=["Nulos antes", "Nulos después"])
     display(tabla_nulos)
     jugadores, eventos = df_calific, df_evento_limp
 
