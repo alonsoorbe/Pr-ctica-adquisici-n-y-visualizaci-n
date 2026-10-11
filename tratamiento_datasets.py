@@ -593,19 +593,10 @@ if __name__ == "__main__":
     df_media_limp = imputacion_media(jugadores, "valor_mercado")
     df_calific = imputacion_calificacion_regresion(df_media_limp, "calificacion_media")
     df_evento_limp = imputacion_min_evento(eventos, "minuto_evento")
-<<<<<<< HEAD
-    resultados = [("valor_mercado",jugadores, df_media_limp),("calificacion_media", jugadores, df_calific),("minuto_evento", eventos,df_evento_limp)]
-    tabla_nulos = pd.DataFrame(
-        {col: [antes[col].isna().sum(), despues[col].isna().sum()]
-        for col, antes, despues in resultados},
-        index=["Nulos antes", "Nulos después"])
-    display(tabla_nulos)
-=======
     resultados = [
         ("valor_mercado",      jugadores, df_media_limp),
         ("calificacion_media", jugadores, df_calific),
-        ("minuto_evento",      eventos,   df_evento_limp),
-    ]
+        ("minuto_evento",      eventos,   df_evento_limp)]
     tabla_nulos = {}
     for col, antes, despues in resultados:
         nulos_antes = antes[col].isna().sum()
@@ -613,7 +604,6 @@ if __name__ == "__main__":
         tabla_nulos[col] = [nulos_antes, nulos_despues]
     resumen_nulos = pd.DataFrame(tabla_nulos, index=["Nulos antes", "Nulos después"])
     display(resumen_nulos)
->>>>>>> e5cea6c913b1cbd61f82a5517e30277bcfa5f2d2
     jugadores, eventos = df_calific, df_evento_limp
 
     # Paso 8
