@@ -287,7 +287,7 @@ def limpiar_partidos(df):
     for col in ["ronda", "estadio", "ciudad_partido", "pais_partido",
                 "seleccion_local", "seleccion_visitante", "arbitro_partido"]:
         df[col] = df[col].str.strip()  # Quitamos espacios
-    for col in ["penalty_local", "penalty_visitante"]:
+    for col in ["penalty_local", "penalty_visitante"]: # Corregimos las columnas de penaltis
         df[col] = (df[col] / 10).fillna(0).astype(int)
     # Traduccion ronda(al principio están las conversiones)
     df["ronda"] = df["ronda"].replace(RONDAS)
@@ -533,6 +533,13 @@ def exportar_excel(df1, df2, df3, df1_name, df2_name, df3_name):
 # MAIN
 
 if __name__ == "__main__":
+
+    # PASO 1
+    print("\n" + "#"*80)
+    print("PASO 1 -> EXPLORACIÓN INICIAL DE LOS DATASETS ORIGINALES")
+    print("#"*80)
+    for nombre, df in datasets_originales.items():
+        exploration(df, nombre)
 
     # PASO 4
     print("\n" + "#"*80)
