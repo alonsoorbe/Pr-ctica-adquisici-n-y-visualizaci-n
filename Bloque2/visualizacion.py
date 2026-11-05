@@ -111,7 +111,7 @@ st.plotly_chart(fig4, width="stretch")
 
 st.header("5. Top 15 jugadores por métrica")
 
-datos5 = jugadores[jugadores["minutos_jugados"] >= 180].copy()   # mismo mínimo que en el apartado 4
+datos5 = jugadores[jugadores["minutos_jugados"] >= 180].copy()   # mismo mínimo que en el 4
 
 datos5["goles/minuto"] = datos5["goles"] / datos5["minutos_jugados"]
 datos5["goles+asistencias/minuto"] = (datos5["goles"] + datos5["asistencias"]) / datos5["minutos_jugados"]
@@ -121,8 +121,8 @@ datos5["tarjetas_amarillas/minuto"] = datos5["tarjetas_amarillas"] / datos5["min
 datos5["tarjetas_rojas/minuto"] = datos5["tarjetas_rojas"] / datos5["minutos_jugados"]
  
 # Suma lo bueno y resta lo malo, con distinto peso
-datos5["metrica_agregada"] = (3 * datos5["goles/minuto"] + 2 * datos5["asistencias/minuto"]- 1 * datos5["goles_concedidos/minuto"]
-                              - 0.5 * datos5["tarjetas_amarillas/minuto"]- 2 * datos5["tarjetas_rojas/minuto"])
+datos5["metrica_agregada"] = (3 * datos5["goles/minuto"] + 2 * datos5["asistencias/minuto"] - 1 * datos5["goles_concedidos/minuto"]
+                              - 0.5 * datos5["tarjetas_amarillas/minuto"] - 2 * datos5["tarjetas_rojas/minuto"])
 
 metricas = ["metrica_agregada", "goles/minuto", "goles+asistencias/minuto", "asistencias/minuto",
             "goles_concedidos/minuto", "tarjetas_amarillas/minuto", "tarjetas_rojas/minuto"]
