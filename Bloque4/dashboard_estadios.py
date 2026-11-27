@@ -24,8 +24,6 @@ partidos = pd.read_excel(buscar_fichero("partidosWC26.xlsx"))
 coordenadas = pd.read_excel(buscar_fichero("estadios_WC26_coordenadas.xlsx"))
 partidos["goles"] = partidos["marcador_local"] + partidos["marcador_visitante"]
 
-partidos, coordenadas = cargar_datos()
-
 # Selector de ronda
 st.sidebar.header("Filtros")
 rondas = st.sidebar.multiselect("Ronda", ORDEN_RONDAS, default=ORDEN_RONDAS)
