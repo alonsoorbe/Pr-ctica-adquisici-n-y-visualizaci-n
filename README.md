@@ -29,7 +29,7 @@ Ejecuta cada comando desde la carpeta del bloque correspondiente.
 - **Bloque 3:** abrir `Bloque3/bloque_3_powwrbi.pbix` con Power BI Desktop.
 - **Bloque 4:**
   1. `cd Bloque4`
-  2. Copiar `.env.example` a `.env` y escribir tu clave de API-Football en `API_FOOTBALL_KEY` (el `.env` no se sube al repositorio).
+  2. Copiar `.env.example` a `.env` y escribir tu clave de football-data.org en `API_FOOTBALL_KEY` (el `.env` no se sube al repositorio).
   3. Abrir y ejecutar `conexion_api.ipynb`. Las respuestas de la API ya guardadas en `cache_api/` se reutilizan para no gastar llamadas.
   4. Geolocalizar estadios: `python geolocalizar_estadios.py estadios_WC26.xlsx estadios_WC26_coordenadas.xlsx`
   5. Dashboard de estadios: `streamlit run dashboard_estadios.py`
